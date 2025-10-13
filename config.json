@@ -1,0 +1,20 @@
+{
+    "index": "*",
+    "elasticsearch_url": "http://localhost:9200",
+    "search_fields": ["*"],
+    "open_file_types": ["pdf", "jpeg", "png"],
+    "display_fields": [
+        {"field": "file.filename", "display_name": "File Name", "style": "$VALUE"},
+        {"field": "path.real", "display_name": "Path", "style": "$VALUE"},
+        {"field": "file.created", "display_name": "Creation Time", "style": "$VALUE"},
+        {"field": "content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000}
+    ],
+    "highlight_fields": ["content"],
+    "base_paths": {},
+    "results_per_page": 40,
+    "fscrawler": {
+        "exe": "None",
+        "config_dir": "None",
+        "defaults": "None"
+    }
+}

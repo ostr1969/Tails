@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tails</title>
+    <style>
+        /* Reset some default styles */
+        body, h1, h2, p {
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Set a background color and font family */
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .search-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+         .search-bar {
+            width: 80%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #007bff;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .search-button {
+            padding: 15px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .grid-container {
+            display: grid;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .result-item {
+            border: 1px solid #ccc;
+            padding: 10px;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pagination a {
+            margin: 0 5px;
+            padding: 5px 10px;
+            text-decoration: none;
+            background-color: #eee;
+            color: #333;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .pagination .current {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .highlight {
+            background-color: rgb(245, 245, 168);
+            font-weight: bold;
+            
+        }
+
+        .document-table {
+
+        }
+
+        .document-table tr {
+            height: 50px;
+            border: 1px solid #ddd
+        }
+
+        .document-table .key {
+            width: 10%;
+            font-weight: 600
+        }
+
+        .document-table .value {
+            
+        }
+
+        .document-title {
+            font-size: larger
+        }
+
+        .back-to-search {
+            font-size: 16px;
+            text-decoration: none;
+            color: #007bff; /* Blue color, you can change it */
+        }
+
+        .below-searchbar {
+            display: flex;
+            justify-content: space-between; /* Align children at opposite ends */
+            align-items: center; /* Center vertically */
+            margin-top: 2px; /* Add margin as needed */
+            padding-right: 3%;
+            padding-left: 3%;
+        }
+
+        .below-searchbar  * {
+            margin: 0;
+            padding: 0;
+        }
+
+        .logo-image {
+            width: 100%; 
+            max-width: 400px; 
+            display: block; 
+            margin: 2px auto;
+        }
+
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" class="logo-image">
+    <form action="/" method="post" class="search-container">
+        <input type="text" id="query" name="query" value="{{ query }}" class="search-bar" required>
+        <button type="submit" class="search-button">Search</button>
+    </form>
+    
+    <div class="below-searchbar">
+        {% if total_hits > 0 %}
+        <h3>Found {{ total_hits }} files</h3>
+        {% else %}
+        <h3>No files to display</h3>
+        {% endif %}
+        <a href="/index" class="back-to-search">Task Control Panel</a>
+    </div>
+
+    <div class="grid-container">
+        {% for hit in hits %}
+            <div class="result-item">
+                {{ hit.make_html()|safe }}
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if total_hits > results_per_page %}
+        <div class="pagination">
+            {% for p in range(1, (total_hits // results_per_page) + 2) %}
+                {% if page == p %}
+                    <a href="?page={{ p }}&query={{ query }}" class="current">{{ p }}</a>
+                {% else %}
+                    <a href="?page={{ p }}&query={{ query }}">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</body>
+</html>

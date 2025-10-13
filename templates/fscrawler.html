@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>tails</title>
+
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1, h2, p {
+            text-align: center;
+        }
+
+        #container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            margin-top: 50px;
+        }
+
+        button {
+            display: block;
+            margin: 10px 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .job-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        }
+
+        .job-table th, .job-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }        
+        
+        /* Style for the modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Style for the modal overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 900;
+        }
+
+        .file-extensions-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .file-extensions-table th, .file-extensions-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .new-job-form p {
+            text-align: left;
+        }
+
+        .new-job-form button {
+            margin: 10px auto;
+        }
+
+        /* Style for the back-to-search link */
+        .back-to-search {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            font-size: 16px;
+            text-decoration: none;
+            color: #007bff; /* Blue color, you can change it */
+        }
+        .reset {
+            position: fixed;
+            top: 40px;
+            left: 10px;
+            font-size: 16px;
+            text-decoration: none;
+            color: #007bff; /* Blue color, you can change it */
+        }        
+
+        .logo-image {
+            width: 100%; 
+            max-width: 400px; 
+            display: block; 
+            margin: 2px auto;
+        }
+
+    </style>
+</head>
+<body>
+    <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" class="logo-image">
+    <a href="/" class="back-to-search">Back to Search</a>
+    
+    <h1>Indexing Tasks Information</h1>
+
+    <!-- Button to open the New Job modal -->
+    
+    <!-- Existing Jobs Information -->
+    <div id="existingJobs">
+        <h2>Existing Jobs</h2>
+        <!-- Display information about existing jobs here -->
+        <!-- We use JS to dynamically load existing jobs information -->
+    </div>
+    
+    <button onclick="openModal('newJobModal')">Create a New Task</button>
+    <!-- New Job Modal -->
+    <div id="newJobModal" class="modal">
+        <h2>Create a New Job</h2>
+        <!-- Add the form fields for creating a new job here -->
+        <form action="/index" method="post" class="new-job-form" enctype="multipart/form-data">
+            <table>
+                <tr>
+                    <td><p>Job name</p></td>
+                    <td><input type="text" name="jobName" id="jobName" required></td>
+                </tr>
+                <tr>
+                    <td><p>Target Directory</p></td>
+                    <td><input type="text" name="targetDirectory" id="targetDirectory" required></td>
+                </tr>
+            </table>
+            
+      <table>
+        <td><button type="submit" onclick="closeAllModals()">Start Indexing</button></td>
+        <td><button type="reset" onclick="closeAllModals()">Cancel</button></td>
+      </table>              
+        </form>
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="modal-overlay" onclick="closeAllModals()"></div>
+
+    <h1>File Statistics</h1>
+    <div class="elasticsearch-statistics" id="elasticsearchDashboard"></div>
+
+    <script src="{{ url_for('static', filename='js/fscrawler_modals.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/existing_jobs_info.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/elasticsearch_statistics.js') }}"></script>
+</body>
+
+</html>
