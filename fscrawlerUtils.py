@@ -22,8 +22,7 @@ def create_new_job(name: str):
  
     exe_path = CONFIG["fscrawler"]["exe"]
     config_dir = CONFIG["fscrawler"]["config_dir"]
-    current_config_dir=os.path.join(config_dir,name)
-    print(current_config_dir)
+    current_config_dir = os.path.join(config_dir,name)
     if name in FSCRAWLER_JOBS and os.path.isdir(current_config_dir):
         return False
     # we create a job in the specified directory. also, we make sure the crawler will run only once on all files
@@ -33,6 +32,7 @@ def create_new_job(name: str):
     proc.communicate("y\n")
     proc.wait()
     FSCRAWLER_JOBS[name] = None
+    print("CREATED DIRECTORY AT", current_config_dir)
     return True
 
 class FscrawlerError (Exception):
@@ -42,7 +42,7 @@ def get_job_settings_path(name: str):
     path = os.path.join(CONFIG["fscrawler"]["config_dir"], name, "_settings.yaml")
     if not os.path.isfile(path):
         raise FscrawlerError("Specified project name doesn't exist,"+ 
-                             "make sure to create it befor editing and running:\n"+
+                             "make sure to create it before editing and running:\n"+
                              path)
     return path 
 
@@ -58,9 +58,10 @@ def load_defaults_to_job(name: str):
     # dumping settings to project dir
     jobDir=os.path.join(CONFIG["fscrawler"]["config_dir"], name)
     settingDir=os.path.join(CONFIG["fscrawler"]["config_dir"], name,"_settings.yaml")
-    os.mkdir(jobDir)
+    #os.mkdir(jobDir)
     with open(settingDir, "w") as f:
         yaml.dump(d, f)
+    print("Loaded default settings to", settingDir)    
 
 def get_job_setting(name: str, key: str):
     with open(get_job_settings_path(name), "r") as f:
@@ -94,6 +95,7 @@ def edit_job_setting(name: str, key: str, value):
     # write change settings to file
     with open(get_job_settings_path(name), "w") as f:
         yaml.dump(ajr, f)
+        print("Saved job settings to", get_job_settings_path(name), "changed", key, "to", value)
 
 def run_job(name: str):
     """Method to run a fscrawler job. note that it must be pre-configured to run. returns the process object"""
@@ -103,7 +105,10 @@ def run_job(name: str):
     exe_path = CONFIG["fscrawler"]["exe"]
     config_dir = CONFIG["fscrawler"]["config_dir"]
     # we create a job in the specified directory. also, we make sure the crawler will run only once on all files
-    cmd = [exe_path, name, "--config_dir", config_dir, "--loop", "1"]
+    cmd = " ".join([exe_path, name, "--config_dir", config_dir, "--loop", "1"])
+    # cmd = [exe_path, name, "--config_dir", config_dir, "--loop", "1"]
+    # add the indexing command as well
+    cmd += f" & python index_dwg.py {name}"
     # run the process, we have to approve the creation by sending "yes"
     p = Popen(cmd, text=True)
     FSCRAWLER_JOBS[name] = p
@@ -137,6 +142,11 @@ def delete_job(name: str):
     shutil.rmtree(os.path.join(CONFIG["fscrawler"]["config_dir"], name))
     return True
 
+
+if __name__ == "__main__":
+    create_new_job("test")
+    edit_job_setting("test", "fs.url", "C:\\Users\\User\\Documents\\repos\\tails\\sample_files")
+    run_job("test")
     
 
 

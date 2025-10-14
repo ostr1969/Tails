@@ -7,14 +7,23 @@
         {"field": "file.filename", "display_name": "File Name", "style": "$VALUE"},
         {"field": "path.real", "display_name": "Path", "style": "$VALUE"},
         {"field": "file.created", "display_name": "Creation Time", "style": "$VALUE"},
-        {"field": "content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000}
+        {"field": "content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+        {"field": "dwg_content.layers", "display_name": "Layers", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+        {"field": "dwg_content.content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+        {"field": "dwg_content.contentrev", "display_name": "Content Rev", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+         {"field": "dwg_content.imagenames", "display_name": "Image Names", "style": "$VALUE", "use_highlights": true, "max_length": 1000}
     ],
-    "highlight_fields": ["content"],
+    "highlight_fields": ["content", "dwg_content.layers", "dwg_content.content", "dwg_content.contentrev", "dwg_content.imagenames"],
     "base_paths": {},
     "results_per_page": 40,
     "fscrawler": {
         "exe": "None",
         "config_dir": "None",
         "defaults": "None"
+    },
+    "dwg_indexer": {
+        "path": "..\\DwgTextract\\dwgtextract.exe",
+        "fonts_csv": "..\\DwgTextract\\Resources\\encode_list.csv",
+        "fonts_dir": "..\\DwgTextract\\Resources\\Fonts\\"
     }
 }

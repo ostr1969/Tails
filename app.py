@@ -82,10 +82,16 @@ def fscraller_index():
     if request.method == "POST":
         name = request.form["jobName"]
         target_dir = request.form["targetDirectory"]
-        #print(request.form["design"])
+        useocr= "doOcr" in request.form
+        if useocr:
+            print("Using OCR")
+        else:
+            print("Not using OCR")
+        
         if fsutils.create_new_job(name):
             fsutils.load_defaults_to_job(name)
             fsutils.edit_job_setting(name, "fs.url", target_dir)
+            fsutils.edit_job_setting(name, "fs.ocr.enabled", useocr)
             fsutils.run_job(name)
     CONFIG["index"] = fsutils.get_all_jobs()
     return render_template("fscrawler.html",j=0)
