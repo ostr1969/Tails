@@ -1,11 +1,16 @@
 from shutil import copyfile
-import os
+import os,sys
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)  # insert at front to prioritize
+tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
+tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
 from flask import render_template, request, send_file, jsonify
 from __init__ import app, EsClient, CONFIG
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
-import tkinter
-from tkinter import filedialog
+#import tkinter
+#from tkinter import filedialog
 
 
 
@@ -92,6 +97,8 @@ def fscraller_index():
             fsutils.load_defaults_to_job(name)
             fsutils.edit_job_setting(name, "fs.url", target_dir)
             fsutils.edit_job_setting(name, "fs.ocr.enabled", useocr)
+            fsutils.edit_job_setting(name, "fs.ocr.data_path", tess_data_path)
+            fsutils.edit_job_setting(name, "fs.ocr.path", tess_path)            
             fsutils.run_job(name)
     CONFIG["index"] = fsutils.get_all_jobs()
     return render_template("fscrawler.html",j=0)

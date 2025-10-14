@@ -58,7 +58,7 @@ def load_defaults_to_job(name: str):
     # dumping settings to project dir
     jobDir=os.path.join(CONFIG["fscrawler"]["config_dir"], name)
     settingDir=os.path.join(CONFIG["fscrawler"]["config_dir"], name,"_settings.yaml")
-    #os.mkdir(jobDir)
+    os.mkdir(jobDir)
     with open(settingDir, "w") as f:
         yaml.dump(d, f)
     print("Loaded default settings to", settingDir)    

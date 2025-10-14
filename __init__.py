@@ -2,8 +2,8 @@ import os
 from flask import Flask
 from elasticsearch7 import Elasticsearch
 import json
-import tkinter
-from tkinter import filedialog
+#import tkinter
+#from tkinter import filedialog
 
 app = Flask(__name__)
 

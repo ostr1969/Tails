@@ -1,9 +1,13 @@
 # script to go over Elastic index and Index all DWG files using command line
+import os,sys
+script_dir = os.path.dirname(os.path.abspath(__file__))
+if script_dir not in sys.path:
+    sys.path.insert(0, script_dir)  # insert at front to prioritize
 from __init__ import EsClient, CONFIG
 import subprocess
 import json
 import argparse
-import os
+
 
 def get_dwgs(es_client, index_name):
     query = {
