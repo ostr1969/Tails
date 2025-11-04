@@ -78,7 +78,8 @@ function deleteJob(jobId) {
         // Perform the deletion (you may use fetch or another method)
         fetch('/delete_job/' + jobId);
         alert("Job deleted: " + jobId);
-        location.reload();
+        //location.reload();
+        window.location.href = window.location.pathname;
     }
 }
 // Fetch and display job information initially

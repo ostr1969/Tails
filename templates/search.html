@@ -129,16 +129,171 @@
             display: block; 
             margin: 2px auto;
         }
+.advanced-search {
+    width: 70%;
+    margin: 10px 0 0 5%;  /* moves the card to the left */
+    background: #ffffff;
+    border: 1px solid #d0d7e2;
+    border-radius: 10px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    transition: all 0.2s ease-in-out;
+     text-align: left; /* ensure contents are aligned left */
+}
+
+.advanced-search:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+}
+
+.advanced-header {
+    background: #f1f5fb;
+    border-bottom: 1px solid #d0d7e2;
+    padding: 8px 15px;
+    border-radius: 10px 10px 0 0;
+    text-align: left; /* title now left-aligned */
+}
+
+.advanced-title {
+    font-weight: 600;
+    color: #007bff;
+    font-size: 16px;
+    display: block; /* ensures consistent alignment */
+}
+
+.advanced-body {
+    padding: 15px 20px;
+    text-align: left;
+}
+
+.advanced-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 5px;
+}
+
+.advanced-select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #007bff;
+    border-radius: 6px;
+    font-size: 15px;
+    background-color: #f8fbff;
+    color: #333;
+    cursor: pointer;
+    transition: border 0.2s ease;
+}
+
+.advanced-select:hover {
+    border-color: #0056b3;
+}
+
+.advanced-hint {
+    margin-top: 10px;
+    background: #f8faff;
+    border-left: 4px solid #007bff;
+    padding: 10px 15px;
+    border-radius: 5px;
+    font-size: 14px;
+    line-height: 1.5;
+    display: none;
+}
+
+.hint-placeholder {
+    color: #888;
+    font-style: italic;
+}
+
+.advanced-hint pre {
+    background: #eef3ff;
+    padding: 6px;
+    border-radius: 5px;
+    font-size: 13px;
+    margin-top: 5px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    transition: background 0.3s ease-in-out;
+}
 
     </style>
+   <script>
+        const queryHelp = {
+            "match": {
+                desc: "Standard full-text search. Uses analysis, stemming, and stop words.",
+                example: `{ "match": { "body": "neural control of gait" } }`
+            },
+            "fuzzy": {
+                desc: "Find terms similar to the query (handles typos).",
+                example: `{ "match": { "body": { "query": "locomoton", "fuzziness": "AUTO" } } }`
+            },
+            "phrase": {
+                desc: "Match exact sequences of words (e.g., 'neural control').",
+                example: `{ "match_phrase": { "body": "neural control" } }`
+            },
+            "wildcard": {
+                desc: "Match patterns using * or ? symbols.",
+                example: `{ "wildcard": { "body": "neural*" } }`
+            },
+            "regexp": {
+                desc: "Match text with a regular expression.",
+                example: `{ "regexp": { "body": "neural.*control" } }`
+            },
+            "query_string": {
+                desc: "Use Lucene syntax (AND, OR, fuzzy, proximity).",
+                example: `{ "query_string": { "query": "neural AND (control OR gait)" } }`
+            },
+            "more_like_this": {
+                desc: "Find documents similar to the given text.",
+                example: `{ "more_like_this": { "fields": ["body"], "like": "locomotion control" } }`
+            }
+        };
+
+        function showHelp() {
+            const selected = document.getElementById("query_type").value;
+            const hintBox = document.getElementById("query_hint");
+            const data = queryHelp[selected];
+            if (data) {
+                hintBox.style.display = "block";
+                hintBox.innerHTML = `
+                    <strong>${selected} query</strong><br>
+                    <span>${data.desc}</span>
+                    <pre><code>${data.example}</code></pre>
+                `;
+            }
+        }
+    </script>
 </head>
-<body>
+<body >
+   <body>
     <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" class="logo-image">
-    <form action="/" method="post" class="search-container">
-        <input type="text" id="query" name="query" value="{{ query }}" class="search-bar" required>
+
+   <form action="/" method="post" class="search-container">
+    <div class="flex-container">
+        <input type="text" id="query" name="query" value="{{ query }}" class="search-bar" placeholder="Search scientific articles..." required>
         <button type="submit" class="search-button">Search</button>
-    </form>
-    
+    </div>
+
+    <div class="advanced-search">
+        <div class="advanced-header">
+            <span class="advanced-title">⚙️ Advanced Options</span>
+        </div>
+        <div class="advanced-body">
+            <label for="query_type" class="advanced-label">Query type</label>
+            <select id="query_type" name="query_type" class="advanced-select" onchange="showHelp()">
+                <option value="match" {% if query_type == 'match' %}selected{% endif %}>Match (default)</option>
+    <option value="fuzzy" {% if query_type == 'fuzzy' %}selected{% endif %}>Fuzzy (typo-tolerant)</option>
+    <option value="phrase" {% if query_type == 'phrase' %}selected{% endif %}>Phrase (exact sequence)</option>
+    <option value="wildcard" {% if query_type == 'wildcard' %}selected{% endif %}>Wildcard</option>
+    <option value="regexp" {% if query_type == 'regexp' %}selected{% endif %}>Regexp</option>
+    <option value="query_string" {% if query_type == 'query_string' %}selected{% endif %}>Query String</option>
+    <option value="more_like_this" {% if query_type == 'more_like_this' %}selected{% endif %}>More Like This</option>
+            </select>
+            <div id="query_hint" class="advanced-hint">
+                <p class="hint-placeholder">Select a query type to see examples.</p>
+            </div>
+        </div>
+    </div>
+</form>
+   
     <div class="below-searchbar">
         {% if total_hits > 0 %}
         <h3>Found {{ total_hits }} files</h3>

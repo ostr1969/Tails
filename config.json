@@ -1,7 +1,8 @@
 {
     "index": "*",
     "elasticsearch_url": "http://localhost:9200",
-    "search_fields": ["*"],
+    "search_fields": ["file.filename","dwg_content.content","dwg_content.layers",
+    "dwg_content.contentrev","dwg_content.imagenames","content"],
     "open_file_types": ["pdf", "jpeg", "png"],
     "display_fields": [
         {"field": "file.filename", "display_name": "File Name", "style": "$VALUE"},

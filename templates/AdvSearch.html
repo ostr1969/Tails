@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced Search</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css">
+    <script>
+        const queryHelp = {
+            "match": {
+                desc: "Standard analyzer-based full-text search. Handles stemming, stop words, etc.",
+                example: `{ "match": { "body": "neural control of gait" } }`
+            },
+            "fuzzy": {
+                desc: "Find terms similar to the query (handles typos or spelling variations).",
+                example: `{ "match": { "body": { "query": "locomoton", "fuzziness": "AUTO" } } }`
+            },
+            "phrase": {
+                desc: "Match exact sequences of words (e.g., 'neural control').",
+                example: `{ "match_phrase": { "body": "neural control" } }`
+            },
+            "wildcard": {
+                desc: "Match patterns using * or ? symbols. Slower but flexible.",
+                example: `{ "wildcard": { "body": "neural*" } }`
+            },
+            "regexp": {
+                desc: "Match using regular expressions.",
+                example: `{ "regexp": { "body": "neural.*control" } }`
+            },
+            "more_like_this": {
+                desc: "Find documents similar to the given text.",
+                example: `{ "more_like_this": { "fields": ["body"], "like": "locomotion control" } }`
+            },
+            "query_string": {
+                desc: "Advanced Lucene-syntax search (supports AND, OR, fuzzy, proximity).",
+                example: `{ "query_string": { "query": "neural AND (control OR gait)" } }`
+            }
+        };
+
+        function showHelp() {
+            const selected = document.getElementById("query_type").value;
+            const helpBox = document.getElementById("help_box");
+            helpBox.innerHTML = `
+                <div class="p-4 bg-gray-100 rounded-lg mt-2">
+                    <p class="font-semibold">${selected} query</p>
+                    <p class="text-gray-700 mt-1">${queryHelp[selected].desc}</p>
+                    <pre class="bg-gray-200 text-sm p-2 mt-2 rounded"><code>${queryHelp[selected].example}</code></pre>
+                </div>
+            `;
+        }
+    </script>
+</head>
+<body class="bg-gray-50 p-6">
+    <div class="max-w-3xl mx-auto bg-white rounded-xl shadow-md p-6">
+        <h2 class="text-2xl font-semibold mb-4">Advanced Article Search</h2>
+        <form method="POST" action="/AdvSearch" class="space-y-4">
+            <div>
+                <label class="block font-medium mb-1">Search query:</label>
+                <input type="text" id="query" name="query" placeholder="Enter your search term..."
+                    class="w-full p-2 border rounded" required>
+            </div>
+
+            <div>
+                <label class="block font-medium mb-1">Query type:</label>
+                <select id="query_type" name="query_type" onchange="showHelp()" 
+                        class="w-full p-2 border rounded">
+                    <option value="match">Match</option>
+                    <option value="fuzzy">Fuzzy</option>
+                    <option value="phrase">Match Phrase</option>
+                    <option value="wildcard">Wildcard</option>
+                    <option value="regexp">Regexp</option>
+                    <option value="query_string">Query String</option>
+                    <option value="more_like_this">More Like This</option>
+                </select>
+            </div>
+
+            <div id="help_box" class="text-sm text-gray-700"></div>
+
+            <div>
+                <button type="submit"
+                        class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                    🔍 Search
+                </button>
+            </div>
+        </form>
+
+        {% if results %}
+        <div class="mt-6">
+            <h3 class="text-xl font-semibold mb-2">Results</h3>
+            {% for r in results %}
+                <div class="border-b py-2">
+                    <p class="font-medium">{{ r.title }}</p>
+                    <p class="text-gray-600 text-sm">{{ r.abstract[:200] }}...</p>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</body>
+</html>

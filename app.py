@@ -1,11 +1,13 @@
 from shutil import copyfile
 import os,sys
+
+from elasticsearch7 import NotFoundError
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)  # insert at front to prioritize
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
-from flask import render_template, request, send_file, jsonify
+from flask import render_template, request, send_file, jsonify, url_for, redirect
 from __init__ import app, EsClient, CONFIG
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
@@ -23,20 +25,20 @@ def search():
 
     if request.method == 'POST':
         query = request.form['query']
+        query_type = request.form.get('query_type', 'match')
     else:
         query = request.args.get('query', "")
+        query_type = request.args.get('query_type', 'match')
 
     if len(query) == 0:
         return render_template('search.html', hits=[], total_hits=0, page=1, query="", results_per_page=CONFIG["results_per_page"])
-
+    
+    # Build the query based on the selected query type
+    query_body = build_query(query, query_type)
+    
     # Perform a simple query on the 'your_index_name' index
     result = EsClient.search(index=CONFIG["index"], body={
-        'query': {
-            'query_string': {
-                'query': query,
-                'fields': CONFIG["search_fields"]
-            }
-        },
+        'query': query_body,
         'size': 1000,
         'highlight': {
             'fields': {field: {} for field in CONFIG["highlight_fields"]},
@@ -62,7 +64,7 @@ def search():
     # make hits fit in page
     total_hits = len(hits)
     hits = hits[start:end]
-    return render_template('search.html',  hits=hits, total_hits=total_hits, page=page, query=query, results_per_page=CONFIG["results_per_page"])
+    return render_template('search.html',  hits=hits, total_hits=total_hits, page=page, query=query, results_per_page=CONFIG["results_per_page"], query_type=query_type)
 
 @app.route('/view/<index>/<file_id>', methods=['GET'])
 def view(index: str, file_id: str):
@@ -84,6 +86,7 @@ def view(index: str, file_id: str):
 
 @app.route('/index', methods=['GET', 'POST'])
 def fscraller_index():
+    print(f"index page {request.method}")
     if request.method == "POST":
         name = request.form["jobName"]
         target_dir = request.form["targetDirectory"]
@@ -108,22 +111,29 @@ def stat():
     return "OK"
 @app.route('/reset', methods=['GET'])
 def reset():
-    
+    print("Resetting FSCrawler jobs")
     return render_template("fscrawler.html",j=1)
 
 @app.route('/_existing_jobs', methods=['GET'])
 def existing_jobs_info():
+    print("Gathering existing fscrawler jobs information")
     stats = fsutils.jobs_status()
     return jsonify(stats)
 
 @app.route('/_elasticsearch_statistics', methods=['GET'])
 def index_statistics():
+    print("Gathering elasticsearch statistics")
     # Get total number of documents
-    total_documents = EsClient.count(index=CONFIG["index"])['count']
-
+    total_documents = get_total_documents(CONFIG["index"])
     # Get total number of documents with content (adjust the query as needed)
+    if total_documents == 0:
+        return {
+            "total_documents": 0,
+            "total_documents_with_content": 0,
+            "file_extensions": []
+        }
     total_documents_with_content = EsClient.count(index=CONFIG["index"], body={"query": {"exists": {"field": "content"}}})['count']
-
+    
     # Get file extensions distribution
     file_extensions_aggregation = EsClient.search(index=CONFIG["index"], body={
         "size": 0,
@@ -137,7 +147,12 @@ def index_statistics():
         }
     })
 
-
+    if 'aggregations' not in file_extensions_aggregation:
+        return {
+            "total_documents": total_documents,
+            "total_documents_with_content": total_documents_with_content,
+            "file_extensions": []
+        }
     file_extensions_buckets = file_extensions_aggregation['aggregations']['file_extensions']['buckets']
     # addint the "other" count
     file_extensions_buckets.append({"key": "other", "doc_count": file_extensions_aggregation['aggregations']['file_extensions']["sum_other_doc_count"]})
@@ -153,8 +168,75 @@ def index_statistics():
 @app.route('/delete_job/<job_name>', methods=['GET'])
 def delete_job(job_name: str):
     fsutils.delete_job(job_name)
-    return True
+    folder_path = os.path.join(CONFIG["fscrawler"]["config_dir"], job_name)
+    if os.path.exists(folder_path):
+        print(f"Folder exists at {folder_path}, deletion may have failed.")
+    else:
+        print(f"Folder does not exist at {folder_path}, deletion successful.")
+    
+    return redirect(url_for('fscraller_index'))
 
+def build_query(query_text, query_type):
+    fields = CONFIG["search_fields"]
 
+    if query_type == "fuzzy":
+        return {
+            "multi_match": {
+                "query": query_text,
+                "fields": fields,
+                "fuzziness": "AUTO"
+            }
+        }
+
+    elif query_type == "phrase":
+        return {
+            "multi_match": {
+                "query": query_text,
+                "fields": fields,
+                "type": "phrase"
+            }
+        }
+
+    elif query_type == "wildcard":
+        # Wildcard doesn't support multi_match — build OR terms per field
+        should_clauses = [{"wildcard": {f: f"{query_text}*"}} for f in fields]
+        return {"bool": {"should": should_clauses}}
+
+    elif query_type == "regexp":
+        should_clauses = [{"regexp": {f: query_text}} for f in fields]
+        return {"bool": {"should": should_clauses}}
+
+    elif query_type == "more_like_this":
+        print("Building more_like_this query with fields:", fields)
+        return {
+            "more_like_this": {
+                "fields": fields,
+                "like": query_text,
+                "min_term_freq": 1,
+                "max_query_terms": 25
+            }
+        }
+
+    elif query_type == "query_string":
+        return {
+            "query_string": {
+                "query": query_text,
+                "fields": fields
+            }
+        }
+
+    else:
+        # Default: match on all fields
+        return {
+            "multi_match": {
+                "query": query_text,
+                "fields": fields
+            }
+        }
+def get_total_documents(index_name):
+    try:
+        return EsClient.count(index=index_name)['count']
+    except NotFoundError:
+        return 0
 if __name__ == '__main__':
     app.run(debug=True)

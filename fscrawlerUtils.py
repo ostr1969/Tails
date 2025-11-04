@@ -19,7 +19,7 @@ def get_all_jobs():
 
 def create_new_job(name: str):
     """create a new project for FSCrawler. this is the first step in running it."""
- 
+    print(f"Creating new job: {name}")
     exe_path = CONFIG["fscrawler"]["exe"]
     config_dir = CONFIG["fscrawler"]["config_dir"]
     current_config_dir = os.path.join(config_dir,name)
@@ -52,7 +52,7 @@ def load_defaults_to_job(name: str):
     with open(CONFIG["fscrawler"]["defaults"], "r") as f:
         d = yaml.safe_load(f)
     # changing elasticsearch adress to the one in CONFIG
-    d["elasticsearch"]["nodes"][0]["url"] = CONFIG["elasticsearch_url"]
+    d["elasticsearch"]["urls"] = CONFIG["elasticsearch_url"]
     # setting name to proper name
     d["name"] = name
     # dumping settings to project dir
@@ -138,8 +138,11 @@ def jobs_status():
 def delete_job(name: str):
     # remove index from elasticsearch
     EsClient.delete_by_query(index=name, body={'query':{'match_all':{}}})
+    print("Deleted index", name, "from elasticsearch")
     # remove folder
     shutil.rmtree(os.path.join(CONFIG["fscrawler"]["config_dir"], name))
+    print("Deleted job folder for", os.path.join(CONFIG["fscrawler"]["config_dir"], name))
+    print(f"FSCRAWLER_JOBS: {FSCRAWLER_JOBS}")
     return True
 
 
