@@ -3,6 +3,7 @@ import os,sys
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)  # insert at front to prioritize
+print("Script directory:", script_dir)
 from __init__ import EsClient, CONFIG
 import subprocess
 import json
@@ -58,7 +59,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Index DWG files from Elastic index.")
     parser.add_argument("index_name", help="Name of the Elastic index to search for DWG files")
     args = parser.parse_args()
-
+    
     dwgs = list(get_dwgs(EsClient, args.index_name))
     ndwgs = len(dwgs)
     print(f"*** START INDEXING {ndwgs} DWG FILES FOR INDEX {args.index_name}***")

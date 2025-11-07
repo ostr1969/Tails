@@ -4,14 +4,15 @@ import os
 import shutil
 from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
 import yaml
-
+script_dir = os.path.dirname(os.path.abspath(__file__))
+python_path = os.path.join(script_dir, "..", "python", "python.exe")
 FSCRAWLER_JOBS = {}
 
 def get_all_jobs():
     """get all jobs of fscrawler"""
     jobs = []
     base_path = CONFIG["fscrawler"]["config_dir"]
-    print(base_path)
+    #print(base_path)
     for obj in os.listdir(base_path):
         if os.path.isdir(os.path.join(base_path, obj)) and not obj == "_default":
             jobs.append(obj)
@@ -32,7 +33,7 @@ def create_new_job(name: str):
     proc.communicate("y\n")
     proc.wait()
     FSCRAWLER_JOBS[name] = None
-    print("CREATED DIRECTORY AT", current_config_dir)
+    print("CREATED DIRECTORY by fscrawler initializing AT ", current_config_dir)
     return True
 
 class FscrawlerError (Exception):
@@ -58,7 +59,7 @@ def load_defaults_to_job(name: str):
     # dumping settings to project dir
     jobDir=os.path.join(CONFIG["fscrawler"]["config_dir"], name)
     settingDir=os.path.join(CONFIG["fscrawler"]["config_dir"], name,"_settings.yaml")
-    os.mkdir(jobDir)
+    #os.mkdir(jobDir)
     with open(settingDir, "w") as f:
         yaml.dump(d, f)
     print("Loaded default settings to", settingDir)    
@@ -108,7 +109,8 @@ def run_job(name: str):
     cmd = " ".join([exe_path, name, "--config_dir", config_dir, "--loop", "1"])
     # cmd = [exe_path, name, "--config_dir", config_dir, "--loop", "1"]
     # add the indexing command as well
-    cmd += f" & python index_dwg.py {name}"
+    cmd += f" & {python_path} index_dwg.py {name}"
+    cmd += f" & {python_path} index_llm.py {name}"
     # run the process, we have to approve the creation by sending "yes"
     p = Popen(cmd, text=True)
     FSCRAWLER_JOBS[name] = p

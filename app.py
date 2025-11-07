@@ -9,12 +9,13 @@ if script_dir not in sys.path:
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
 from flask import render_template, request, send_file, jsonify, url_for, redirect,Flask
-from __init__ import app, EsClient, CONFIG
+from __init__ import  EsClient, CONFIG
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
-#import tkinter
+global model
 #from tkinter import filedialog
- 
+app = Flask(__name__)
+
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -39,6 +40,7 @@ def search():
     query_body = build_query(query, query_type)
     fields={field: {} for field in CONFIG["highlight_fields"]}
     #fields["content"] = {"type": "semantic"}
+    print(query_body)
     # Perform a simple query on the 'your_index_name' index
     result = EsClient.search(index=CONFIG["index"], body={
         'query': query_body,
@@ -120,13 +122,13 @@ def reset():
 
 @app.route('/_existing_jobs', methods=['GET'])
 def existing_jobs_info():
-    print("Gathering existing fscrawler jobs information")
+    #print("Gathering existing fscrawler jobs information")
     stats = fsutils.jobs_status()
     return jsonify(stats)
 
 @app.route('/_elasticsearch_statistics', methods=['GET'])
 def index_statistics():
-    print("Gathering elasticsearch statistics")
+    #print("Gathering elasticsearch statistics")
     # Get total number of documents
     total_documents = get_total_documents(CONFIG["index"])
     # Get total number of documents with content (adjust the query as needed)
@@ -204,7 +206,7 @@ def build_query(query_text, query_type):
             }
         }
     elif query_type == "semantic":
-        print("Building semantic query with fields:", fields)
+        #print(f"Building semantic query {query_text} {CONFIG['semantic_model']['content_embedding_field']} {CONFIG['semantic_model']['filename_embedding_field']}")
         query_vector = model.encode(query_text).tolist()
         #print("Query vector :", query_vector)
         return {
@@ -264,25 +266,20 @@ def get_total_documents(index_name):
         return EsClient.count(index=index_name)['count']
     except NotFoundError:
         return 0
-def init_llm():
-        #app = Flask(__name__)
-        # Setup code here, e.g., database initialization
-        #with app.app_context():
-        start_background_loading()  # Example function to initialize a database
-        #return app 
-        pass 
-def start_background_loading():    
-    thread = Thread(target=load_model_background)
-    thread.daemon = True  # so Flask can still exit cleanly
-    thread.start()      
-def load_model_background():
+def background_task():
+    print("Background thread running...")
+    # Do something useful here
+
+def load_model():
     global model
-    print("Background model loading started...")    
+    print("Loading model...")
     model = SentenceTransformer(CONFIG["semantic_model"]["model_name"])
-    print("Model loaded successfully.")
+    print("Model loaded.")
 
 
        
 if __name__ == '__main__':
-    init_llm()
+    #if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        #load_model()                # runs once
+    Thread(target=load_model, daemon=True).start()  # runs once
     app.run(debug=True)
