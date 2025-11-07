@@ -1,24 +1,26 @@
 from shutil import copyfile
 import os,sys
-
+from sentence_transformers import SentenceTransformer
+from threading import Thread
 from elasticsearch7 import NotFoundError
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)  # insert at front to prioritize
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
-from flask import render_template, request, send_file, jsonify, url_for, redirect
+from flask import render_template, request, send_file, jsonify, url_for, redirect,Flask
 from __init__ import app, EsClient, CONFIG
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
 #import tkinter
 #from tkinter import filedialog
-
+ 
 
 
 @app.route('/', methods=['GET', 'POST'])
 def search():
     # Pagination
+    print(f"home page {request.method}")
     page = int(request.args.get('page', 1))
     start = (page - 1) * CONFIG["results_per_page"]
     end = start + CONFIG["results_per_page"]
@@ -29,21 +31,23 @@ def search():
     else:
         query = request.args.get('query', "")
         query_type = request.args.get('query_type', 'match')
-
+        
     if len(query) == 0:
         return render_template('search.html', hits=[], total_hits=0, page=1, query="", results_per_page=CONFIG["results_per_page"])
     
     # Build the query based on the selected query type
     query_body = build_query(query, query_type)
-    
+    fields={field: {} for field in CONFIG["highlight_fields"]}
+    #fields["content"] = {"type": "semantic"}
     # Perform a simple query on the 'your_index_name' index
     result = EsClient.search(index=CONFIG["index"], body={
         'query': query_body,
         'size': 1000,
         'highlight': {
-            'fields': {field: {} for field in CONFIG["highlight_fields"]},
+            'fields': fields,
             'pre_tags': ['<em class="highlight">'],
             'post_tags': ['</em>']
+            
         }
     })
 
@@ -177,8 +181,11 @@ def delete_job(job_name: str):
     return redirect(url_for('fscraller_index'))
 
 def build_query(query_text, query_type):
+    global model
     fields = CONFIG["search_fields"]
-
+    if model is None and query_type == "Semantic":
+        print("Model not loaded yet, using default match query.")
+        query_type = "match"
     if query_type == "fuzzy":
         return {
             "multi_match": {
@@ -196,7 +203,23 @@ def build_query(query_text, query_type):
                 "type": "phrase"
             }
         }
-
+    elif query_type == "semantic":
+        print("Building semantic query with fields:", fields)
+        query_vector = model.encode(query_text).tolist()
+        #print("Query vector :", query_vector)
+        return {
+            "script_score": {
+               "query": {
+            "exists": {
+              "field": "has_embedding"
+            }
+          },
+                "script": {
+                    "source": "cosineSimilarity(params.query_vector, '{}') + 1.0".format(CONFIG["semantic_model"]["embedding_field"]),
+                    "params": {"query_vector": query_vector}
+                }
+            }
+        }
     elif query_type == "wildcard":
         # Wildcard doesn't support multi_match — build OR terms per field
         should_clauses = [{"wildcard": {f: f"{query_text}*"}} for f in fields]
@@ -238,5 +261,25 @@ def get_total_documents(index_name):
         return EsClient.count(index=index_name)['count']
     except NotFoundError:
         return 0
+def init_llm():
+        #app = Flask(__name__)
+        # Setup code here, e.g., database initialization
+        #with app.app_context():
+        start_background_loading()  # Example function to initialize a database
+        #return app 
+        pass 
+def start_background_loading():    
+    thread = Thread(target=load_model_background)
+    thread.daemon = True  # so Flask can still exit cleanly
+    thread.start()      
+def load_model_background():
+    global model
+    print("Background model loading started...")
+    model = SentenceTransformer(CONFIG["semantic_model"]["model_name"])
+    print("Model loaded successfully.")
+
+
+       
 if __name__ == '__main__':
+    init_llm()
     app.run(debug=True)

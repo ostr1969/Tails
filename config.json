@@ -26,5 +26,9 @@
         "path": "..\\DwgTextract\\dwgtextract.exe",
         "fonts_csv": "..\\DwgTextract\\Resources\\encode_list.csv",
         "fonts_dir": "..\\DwgTextract\\Resources\\Fonts\\"
+    },
+    "semantic_model": {
+        "model_name": "C:\\Users\\barako\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c9745ed1d9f207416be6d2e6f8de32d1f16199bf",
+        "embedding_field": "embedding"
     }
 }

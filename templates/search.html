@@ -244,6 +244,13 @@
             "more_like_this": {
                 desc: "Find documents similar to the given text.",
                 example: `{ "more_like_this": { "fields": ["body"], "like": "locomotion control" } }`
+            },
+             "semantic": {
+                desc: "Find by LLM.",
+                example: `{"script_score": {"query": {
+            "exists": {"field": "has_embedding"}},
+                "script": {"source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0"),
+                           "params": {"query_vector": query_vector}} }}`
             }
         };
 
@@ -280,6 +287,7 @@
             <label for="query_type" class="advanced-label">Query type</label>
             <select id="query_type" name="query_type" class="advanced-select" onchange="showHelp()">
                 <option value="match" {% if query_type == 'match' %}selected{% endif %}>Match (default)</option>
+                <option value="semantic" {% if query_type == 'semantic' %}selected{% endif %}>Semantic (contextual)</option>
     <option value="fuzzy" {% if query_type == 'fuzzy' %}selected{% endif %}>Fuzzy (typo-tolerant)</option>
     <option value="phrase" {% if query_type == 'phrase' %}selected{% endif %}>Phrase (exact sequence)</option>
     <option value="wildcard" {% if query_type == 'wildcard' %}selected{% endif %}>Wildcard</option>
