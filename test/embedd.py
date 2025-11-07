@@ -5,7 +5,9 @@ from sentence_transformers import SentenceTransformer
 ES_HOST = "http://localhost:9200"      # Your Elasticsearch URL
 INDEX_NAME = "articles"          # Replace with your index name
 CONTENT_FIELD = "content"
-EMBEDDING_FIELD = "embedding"
+FILENAME_FIELD = "file.filename"
+CONTENT_EMBEDDING = "content_embedding"
+FILENAME_EMBEDDING = "filename_embedding"
 MODEL_NAME = "C:\\Users\\barako\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c9745ed1d9f207416be6d2e6f8de32d1f16199bf"
 
 # --- INITIALIZE ---
@@ -19,25 +21,30 @@ scroll = helpers.scan(client=es, index=INDEX_NAME, query=query, preserve_order=F
 actions = []
 count = 0
 
-for doc in []:  # scroll:
+for doc in scroll:  # scroll:
     doc_id = doc["_id"]
     source = doc["_source"]
-    text = source.get(CONTENT_FIELD)
+    context_text = source.get(CONTENT_FIELD, "").replace("\n", " ")
+    filename_text = source.get(FILENAME_FIELD, "").replace("\n", " ")
 
-    if not text:
-       
+    if not context_text :
         continue  # skip empty content
 
-    embedding = model.encode(text.replace("\n", " ")).tolist()
+    count += 1
+    if count>1000:
+        continue
     
-    actions.append({
+    action={
         "_op_type": "update",
         "_index": INDEX_NAME,
-        "_id": doc_id,
-        "doc": {EMBEDDING_FIELD: embedding,"has_embedding": True}
-    })
-    print(f"Prepared update for document ID: {doc_id}, embedding length: {len(embedding)}")
-    count += 1
+        "_id": doc_id}
+    embedding1 = model.encode(context_text).tolist()
+    embedding2 = model.encode(filename_text).tolist()
+    action["doc"] = {CONTENT_EMBEDDING: embedding1,FILENAME_EMBEDDING: embedding2,"has": True}
+    actions.append(action)
+   
+    print(f"Prepared update for document ID: {doc_id}")
+    
     # Bulk update in batches of 100
     if len(actions) >= 100:
         helpers.bulk(es, actions)
@@ -62,11 +69,16 @@ response = es.search(
         "script_score": {
            "query": {
         "exists": {
-          "field": "has_embedding"
+          "field": "has"
         }
       },
             "script": {
-                "source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0",
+                "source":
+                    """
+                    double s1=cosineSimilarity(params.query_vector, 'content_embedding') ;
+                    double s2=cosineSimilarity(params.query_vector, 'filename_embedding') ;
+                    return Math.max(s1, s2);
+                    """,
                 "params": {"query_vector": query_vector}
             }
         }

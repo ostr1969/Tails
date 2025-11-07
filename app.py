@@ -1,5 +1,5 @@
 from shutil import copyfile
-import os,sys
+import os,sys,time
 from sentence_transformers import SentenceTransformer
 from threading import Thread
 from elasticsearch7 import NotFoundError
@@ -211,11 +211,14 @@ def build_query(query_text, query_type):
             "script_score": {
                "query": {
             "exists": {
-              "field": "has_embedding"
+              "field": "has"
             }
           },
                 "script": {
-                    "source": "cosineSimilarity(params.query_vector, '{}') + 1.0".format(CONFIG["semantic_model"]["embedding_field"]),
+                    "source": """cosineSimilarity(params.query_vector, '{}') ; 
+                    cosineSimilarity(params.query_vector, '{}') ;
+                     return Math.max(s1, s2);""".format(CONFIG["semantic_model"]["content_embedding_field"], 
+                                                        CONFIG["semantic_model"]["filename_embedding_field"]),
                     "params": {"query_vector": query_vector}
                 }
             }
@@ -274,7 +277,7 @@ def start_background_loading():
     thread.start()      
 def load_model_background():
     global model
-    print("Background model loading started...")
+    print("Background model loading started...")    
     model = SentenceTransformer(CONFIG["semantic_model"]["model_name"])
     print("Model loaded successfully.")
 
