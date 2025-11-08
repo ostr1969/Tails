@@ -56,10 +56,13 @@ class SearchHit:
     def hit_title(self):
         extention = str(self.get_field_value("file.extension")).upper()
         return "<a href=/view/{}/{} class=\"document-title\">{} file</a>".format(self.hit["_index"], self.hit["_id"], extention)
+    def hit_like_this(self):
+        return "<a href=/more/{}/{} class=\"document-title\">Find Similar</a>".format(self.hit["_index"], self.hit["_id"])
 
     def make_html(self) -> str:
         """Make required html for presenting the hit in the search resutls"""
-        s = self.hit_title()
+        s = '<div class="file-card">' + self.hit_title()
+        s+=self.hit_like_this()+"</div>\n"
         table_rows = self.hit_to_table()
         # convert table to HTML
         s += "<table class=\"document-table\">"

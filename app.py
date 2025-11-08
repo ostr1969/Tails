@@ -83,6 +83,28 @@ def view(index: str, file_id: str):
         download = True
     return send_file(target, as_attachment=download)
 
+@app.route('/more/<index>/<file_id>', methods=['POST','GET'])
+def more(index: str, file_id: str):
+    #hit = EsClient.get(index=index, id=file_id)
+    page = int(request.args.get('page', 1))
+    start = (page - 1) * CONFIG["results_per_page"]
+    end = start + CONFIG["results_per_page"]
+    query_body={
+    "more_like_this": {
+      "fields": ["title", "content"],
+      "like": [
+        { "_index": index, "_id": file_id }       
+      ]
+    }
+    }
+    result = EsClient.search(index=CONFIG["index"], query=query_body ,
+            size=1000
+        )
+    hits = hits_from_resutls(result)
+    total_hits = len(hits)
+    hits = hits[start:end]
+    return render_template('search.html',  hits=hits, total_hits=total_hits, page=page, query="", results_per_page=CONFIG["results_per_page"], query_type="more_like_this")
+
 @app.route('/index', methods=['GET', 'POST'])
 def fscraller_index():
     print(f"index page {request.method}")
@@ -206,8 +228,8 @@ def build_query(query_text, query_type):
             }
           },
                 "script": {
-                    "source": """double s1=cosineSimilarity(params.query_vector, '{}') ; 
-                    double s2=cosineSimilarity(params.query_vector, '{}') ;
+                    "source": """double s1=cosineSimilarity(params.query_vector, '{}')+1 ; 
+                    double s2=cosineSimilarity(params.query_vector, '{}')+1 ;
                      return Math.max(s1, s2);""".format(CONFIG["semantic_model"]["content_embedding_field"], 
                                                         CONFIG["semantic_model"]["filename_embedding_field"]),
                     "params": {"query_vector": query_vector}
