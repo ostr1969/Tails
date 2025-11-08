@@ -15,12 +15,9 @@
         "synonym_filter": {
           "type": "synonym",
           "lenient": true,
-          "synonyms": [
-           "ai, artificial intelligence",
-            "usa, united states, america",
-            "ml, machine learning",
-            "nlp, natural language processing"
-          ]
+		  "format": "wordnet",
+          "synonyms_path": "analysis\\wordnet_synonyms.txt",
+		  "expand": false
         }
       },
       "analyzer": {
@@ -32,8 +29,7 @@
           "filter": [
             "lowercase",
             "english_stop",
-            "english_stemmer",
-            "synonym_filter"
+            "english_stemmer"
           ]
         }
       },
