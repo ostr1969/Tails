@@ -1,20 +1,20 @@
 from shutil import copyfile
-import os,sys,time
+import os,sys,time,json
 from sentence_transformers import SentenceTransformer
 from threading import Thread
-from elasticsearch7 import NotFoundError
+from elasticsearch import NotFoundError
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)  # insert at front to prioritize
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
 from flask import render_template, request, send_file, jsonify, url_for, redirect,Flask
-from __init__ import  EsClient, CONFIG
+from __init__ import app, EsClient, CONFIG
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
 global model
 #from tkinter import filedialog
-app = Flask(__name__)
+#app = Flask(__name__)
 
 
 
@@ -25,7 +25,7 @@ def search():
     page = int(request.args.get('page', 1))
     start = (page - 1) * CONFIG["results_per_page"]
     end = start + CONFIG["results_per_page"]
-
+    #print(request.form)
     if request.method == 'POST':
         query = request.form['query']
         query_type = request.form.get('query_type', 'match')
@@ -39,31 +39,24 @@ def search():
     # Build the query based on the selected query type
     query_body = build_query(query, query_type)
     fields={field: {} for field in CONFIG["highlight_fields"]}
-    #fields["content"] = {"type": "semantic"}
-    print(query_body)
-    # Perform a simple query on the 'your_index_name' index
-    result = EsClient.search(index=CONFIG["index"], body={
-        'query': query_body,
-        'size': 1000,
-        'highlight': {
+    highlight={
             'fields': fields,
             'pre_tags': ['<em class="highlight">'],
             'post_tags': ['</em>']
             
-        }
-    })
+    }
+    
+    # Perform a simple query on the 'your_index_name' index
+    #with open("debug_query.es", "w", encoding="utf-8") as f:
+    #    json.dump({"query":query_body,"highlight":highlight,"size":1000}, f, ensure_ascii=False, indent=2)
+    result = EsClient.search(index=CONFIG["index"],query=query_body, 
+                             highlight=highlight,size=1000)
 
     # in case the highlight failed, try to run query without highlighting 
     if len(result["hits"]["hits"]) == 0:
-        result = EsClient.search(index=CONFIG["index"], body={
-            'query': {
-                'query_string': {
-                    'query': query,
-                    'fields': CONFIG["search_fields"]
-                }
-            },
-            'size': 1000,
-        })  
+        result = EsClient.search(index=CONFIG["index"], query=query_body ,
+            size=1000
+        )
 
     # Extract relevant information from the result
     hits = hits_from_resutls(result)
@@ -138,20 +131,16 @@ def index_statistics():
             "total_documents_with_content": 0,
             "file_extensions": []
         }
-    total_documents_with_content = EsClient.count(index=CONFIG["index"], body={"query": {"exists": {"field": "content"}}})['count']
+    total_documents_with_content = EsClient.count(index=CONFIG["index"], query={"exists": {"field": "content"}})['count']
     
     # Get file extensions distribution
-    file_extensions_aggregation = EsClient.search(index=CONFIG["index"], body={
-        "size": 0,
-        "aggs": {
-            "file_extensions": {
-                "terms": {
-                    "field": "file.extension",
-                    "size": 9
-                }
-            }
-        }
-    })
+    file_extensions_aggregation = EsClient.search(index=CONFIG["index"],size=0, aggs={        
+        "file_extensions": {
+            "terms": {
+                "field": "file.extension",
+                "size": 9
+                }            }        }
+    )
 
     if 'aggregations' not in file_extensions_aggregation:
         return {
@@ -217,8 +206,8 @@ def build_query(query_text, query_type):
             }
           },
                 "script": {
-                    "source": """cosineSimilarity(params.query_vector, '{}') ; 
-                    cosineSimilarity(params.query_vector, '{}') ;
+                    "source": """double s1=cosineSimilarity(params.query_vector, '{}') ; 
+                    double s2=cosineSimilarity(params.query_vector, '{}') ;
                      return Math.max(s1, s2);""".format(CONFIG["semantic_model"]["content_embedding_field"], 
                                                         CONFIG["semantic_model"]["filename_embedding_field"]),
                     "params": {"query_vector": query_vector}
@@ -274,12 +263,13 @@ def load_model():
     global model
     print("Loading model...")
     model = SentenceTransformer(CONFIG["semantic_model"]["model_name"])
+    #time.sleep(10)
     print("Model loaded.")
 
 
        
 if __name__ == '__main__':
-    #if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
-        #load_model()                # runs once
-    Thread(target=load_model, daemon=True).start()  # runs once
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+    #load_model()                # runs once
+        Thread(target=load_model, daemon=True).start()  # runs once
     app.run(debug=True)
