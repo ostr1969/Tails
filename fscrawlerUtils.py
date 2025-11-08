@@ -1,9 +1,11 @@
 # this file contains a module for using fscrawler from python
 from __init__ import CONFIG, EsClient
-import os
+import os,threading,time
 import shutil
 from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
 import yaml
+from index_llm import Update_all_semantics
+from index_dwg import Update_all_dwgs_dwgs
 script_dir = os.path.dirname(os.path.abspath(__file__))
 python_path = os.path.join(script_dir, "..", "python", "python.exe")
 FSCRAWLER_JOBS = {}
@@ -98,7 +100,7 @@ def edit_job_setting(name: str, key: str, value):
         yaml.dump(ajr, f)
         print("Saved job settings to", get_job_settings_path(name), "changed", key, "to", value)
 
-def run_job(name: str):
+def run_job(name: str,model):
     """Method to run a fscrawler job. note that it must be pre-configured to run. returns the process object"""
     # before anything we make sure that the job was created
     get_job_settings_path(name)
@@ -106,16 +108,38 @@ def run_job(name: str):
     exe_path = CONFIG["fscrawler"]["exe"]
     config_dir = CONFIG["fscrawler"]["config_dir"]
     # we create a job in the specified directory. also, we make sure the crawler will run only once on all files
-    cmd = " ".join([exe_path, name, "--config_dir", config_dir, "--loop", "1"])
+    cmd = " ".join([exe_path, name, "--config_dir", config_dir,"--silent", "--loop", "1"])
     # cmd = [exe_path, name, "--config_dir", config_dir, "--loop", "1"]
     # add the indexing command as well
-    cmd += f" & {python_path} index_dwg.py {name}"
-    cmd += f" & {python_path} index_llm.py {name}"
+    #cmd += f" & {python_path} index_dwg.py {name}"
+    #cmd += f" & {python_path} index_llm.py {name}"
     # run the process, we have to approve the creation by sending "yes"
+    start_time=time.time()
+    add_index_meta(name,0,0,0)
     p = Popen(cmd, text=True)
+    def watcher(start_time=start_time):
+        p.wait()
+        fs_time=time.time()-start_time
+        add_index_meta(name,fs_time,0,0)
+        start_time=time.time()
+        Update_all_dwgs_dwgs(EsClient, name)
+        dwg_time= time.time()-start_time
+        add_index_meta(name, fs_time, dwg_time, 0)
+        start_time=time.time()
+        Update_all_semantics(EsClient, name, model)
+        semantic_time= time.time()-start_time
+        add_index_meta(name, fs_time, dwg_time, semantic_time)
+    threading.Thread(target=watcher, daemon=True, args=(start_time,)).start()
     FSCRAWLER_JOBS[name] = p
     return p
-
+def add_index_meta(index_name:str,fs_indexing_time:float,dwg_indexing_time:float,semantic_indexing_time:float):
+    EsClient.indices.put_mapping(
+    index=index_name,
+    _meta={        "fs_indexing_seconds":f"{fs_indexing_time:.1f}",
+        "dwg_indexing_seconds": f"{dwg_indexing_time:.1f}" ,
+        "semantic_indexing_seconds": f"{semantic_indexing_time:.1f}" 
+    }
+    )
 def stop_job(name: str):
     """Method to stop a running FSCrawler job"""
     if not name in FSCRAWLER_JOBS:
@@ -133,7 +157,17 @@ def jobs_status():
     jobs = []
     # {"name": "job1", "directory": "C:", "indexed_files": 30000, "status": "running"}
     for name in get_all_jobs():
-        job = {"name": name, "indexed_files": EsClient.count(index=name)["count"], "directory": get_job_setting(name, "fs.url")}
+        info = EsClient.indices.get_mapping(index=name)
+        if info[name]["mappings"]["_meta"].get("semantic_indexing_seconds", None) !="0.0":
+            status = "completed"
+        else:
+            status = "indexing"
+        job = {"name": name, "indexed_files": EsClient.count(index=name)["count"], "directory": get_job_setting(name, "fs.url"),
+               "status": status,
+               "fs_indexing_seconds": info[name]["mappings"]["_meta"].get("fs_indexing_seconds", None),
+               "dwg_indexing_seconds": info[name]["mappings"]["_meta"].get("dwg_indexing_seconds", None),
+               "semantic_indexing_seconds": info[name]["mappings"]["_meta"].get("semantic_indexing_seconds", None)
+               }
         jobs.append(job)
     return jobs
 

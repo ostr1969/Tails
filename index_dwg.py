@@ -54,19 +54,20 @@ def update_dwg(es_client, file_id: str, index_name: str, content: dict):
     }
     print(f"updating {index_name}/{file_id} with {len(str(content))} content characters")
     es_client.update(index=index_name, id=file_id, body=update_body)
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Index DWG files from Elastic index.")
-    parser.add_argument("index_name", help="Name of the Elastic index to search for DWG files")
-    args = parser.parse_args()
-    
-    dwgs = list(get_dwgs(EsClient, args.index_name))
+def Update_all_dwgs_dwgs(es_client, index_name):
+    dwgs = list(get_dwgs(es_client, index_name))
     ndwgs = len(dwgs)
-    print(f"*** START INDEXING {ndwgs} DWG FILES FOR INDEX {args.index_name}***")
+    print(f"*** START INDEXING {ndwgs} DWG FILES FOR INDEX {index_name}***")
     for dwg in dwgs:
         file_path = dwg.get("path", {}).get("real")
         file_id = dwg.get("id")
         if file_path and file_id:
             content = index_dwg(file_path)
-            update_dwg(EsClient, file_id, args.index_name, content)
-    print(f"*** DONE INDEXING {ndwgs} DWG FILES FOR INDEX {args.index_name}***")
+            update_dwg(es_client, file_id, index_name, content)
+    print(f"*** DONE INDEXING {ndwgs} DWG FILES FOR INDEX {index_name}***")
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Index DWG files from Elastic index.")
+    parser.add_argument("index_name", help="Name of the Elastic index to search for DWG files")
+    args = parser.parse_args()
+    Update_all_dwgs(EsClient, args.index_name)
+    

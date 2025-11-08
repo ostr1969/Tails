@@ -2,19 +2,19 @@
     "index": "*",
     "elasticsearch_url": "http://localhost:9200",
     "search_fields": ["file.filename","dwg_content.content","dwg_content.layers",
-    "dwg_content.contentrev","dwg_content.imagenames","content"],
+    "dwg_content.contentrev","dwg_content.imagenames","content","file.filename.text"],
     "open_file_types": ["pdf", "jpeg", "png"],
     "display_fields": [
-        {"field": "file.filename", "display_name": "File Name", "style": "$VALUE"},
-        {"field": "path.real", "display_name": "Path", "style": "$VALUE"},
+         {"field": "file.filename.text", "display_name": "filename", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
         {"field": "file.created", "display_name": "Creation Time", "style": "$VALUE"},
         {"field": "content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
         {"field": "dwg_content.layers", "display_name": "Layers", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
         {"field": "dwg_content.content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
         {"field": "dwg_content.contentrev", "display_name": "Content Rev", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
          {"field": "dwg_content.imagenames", "display_name": "Image Names", "style": "$VALUE", "use_highlights": true, "max_length": 1000}
+        
     ],
-    "highlight_fields": ["content", "dwg_content.layers", "dwg_content.content", "dwg_content.contentrev", "dwg_content.imagenames"],
+    "highlight_fields": ["content", "dwg_content.layers", "dwg_content.content", "dwg_content.contentrev", "dwg_content.imagenames","file.filename.text","file.filename"],
     "base_paths": {},
     "results_per_page": 40,
     "fscrawler": {

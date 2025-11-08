@@ -80,14 +80,18 @@ GET /articles/_search
   }
 }
 #match phrase query
-GET /articles/_search
+GET /try/_search
 {
   "query": {
     "match_phrase": {
-      "content": {
-        "query": "artificial intelligence technologies",
+      "file.filename.text": {
+        "query": "coordination",
         "slop": 2
       }
+    }
+  }, "highlight": {
+    "fields": {
+      "content": {},"file.filename.text": {}
     }
   }
 }
@@ -104,11 +108,16 @@ GET /articles/_search
   }
 }
 #synonym query
-GET /articles/_search
+GET /try/_search
 {
   "query": {
-    "match": {
-      "content": "usa"
+    "multi_match": {
+      "query": "Effectiveness",
+      "fields": ["file.filename.text", "content"]
+    }
+  },"highlight": {
+    "fields": {
+      "content": {},"file.filename.text": {}
     }
   }
 }

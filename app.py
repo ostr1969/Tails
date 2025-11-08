@@ -47,8 +47,8 @@ def search():
     }
     
     # Perform a simple query on the 'your_index_name' index
-    #with open("debug_query.es", "w", encoding="utf-8") as f:
-    #    json.dump({"query":query_body,"highlight":highlight,"size":1000}, f, ensure_ascii=False, indent=2)
+    with open("debug_query.es", "w", encoding="utf-8") as f:
+        json.dump({"query":query_body,"highlight":highlight,"size":1000}, f, ensure_ascii=False, indent=2)
     result = EsClient.search(index=CONFIG["index"],query=query_body, 
                              highlight=highlight,size=1000)
 
@@ -101,7 +101,7 @@ def fscraller_index():
             fsutils.edit_job_setting(name, "fs.ocr.enabled", useocr)
             fsutils.edit_job_setting(name, "fs.ocr.data_path", tess_data_path)
             fsutils.edit_job_setting(name, "fs.ocr.path", tess_path)            
-            fsutils.run_job(name)
+            fsutils.run_job(name,model)
     CONFIG["index"] = fsutils.get_all_jobs()
     return render_template("fscrawler.html",j=0)
 

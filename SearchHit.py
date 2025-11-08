@@ -39,11 +39,14 @@ class SearchHit:
             field_value = str(self.get_field_value(display["field"]))
             if field_value is None:
                 continue
+           
             # in case we need to use highlighted format, read the value from highlights
             if "use_highlights" in display and display["use_highlights"] and "highlight" in self.hit and display["field"] in self.hit["highlight"]:
                 field_value = "...".join(self.hit["highlight"][display["field"]])
             if "max_length" in display and len(field_value) > display["max_length"]:
                 field_value = field_value[:display["max_length"]] + "..."
+            if display["field"]=="file.filename.text" and field_value=="None": #exception for missing filename highlight field
+                field_value = self.get_field_value("file.filename")    
             # format field according to styling information
             formatted = display["style"].replace("$VALUE", field_value)
             # collect data to table

@@ -28,7 +28,7 @@ function displayExistingJobs(jobs) {
         // Create table header
         const thead = document.createElement('thead');
         const headerRow = document.createElement('tr');
-        const headerNames = ['Task Name', 'Task Directory', 'Files Indexed'];  // Adjust column names as needed
+        const headerNames = ['Task Name', 'Task Directory', 'Files Indexed',  'FS Time', 'DWG Time', 'Semantic Time','Status',];  // Adjust column names as needed
 
         headerNames.forEach(headerName => {
             const th = document.createElement('th');
@@ -58,8 +58,24 @@ function displayExistingJobs(jobs) {
             row.appendChild(cell3);
 
             const cell4 = document.createElement('td');
-            cell4.innerHTML = "<button onclick=\"deleteJob('" + job.name + "')\">Delete</button>";  // Adjust property as needed
+            cell4.textContent = job.fs_indexing_seconds;  // Adjust property as needed
             row.appendChild(cell4);
+
+            const cell5 = document.createElement('td');
+            cell5.textContent = job.dwg_indexing_seconds;  // Adjust property as needed
+            row.appendChild(cell5);
+
+            const cell6 = document.createElement('td');
+            cell6.textContent = job.semantic_indexing_seconds;  // Adjust property as needed
+            row.appendChild(cell6);
+
+            const cell7 = document.createElement('td');
+            cell7.textContent = job.status;  // Adjust property as needed
+            row.appendChild(cell7);
+
+            const cell8 = document.createElement('td');
+            cell8.innerHTML = "<button onclick=\"deleteJob('" + job.name + "')\">Delete</button>";  // Adjust property as needed
+            row.appendChild(cell8);
 
             tbody.appendChild(row);
         });
