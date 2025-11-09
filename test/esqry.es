@@ -112,8 +112,8 @@ GET /try/_search
 {
   "query": {
     "multi_match": {
-      "query": "Effectiveness",
-      "fields": ["file.filename.text", "content"]
+      "query": "Training strategies for athletes in  basketball",
+      "fields": ["content"]
     }
   },"highlight": {
     "fields": {
@@ -121,6 +121,9 @@ GET /try/_search
     }
   }
 }
+
+DELETE /phd/_doc/e5fb9f82fd40863876745314b6898ca
+
 #wildcard query
 GET /articles/_search
 {

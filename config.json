@@ -8,10 +8,10 @@
          {"field": "file.filename.text", "display_name": "filename", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
         {"field": "file.created", "display_name": "Creation Time", "style": "$VALUE"},
         {"field": "content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
-        {"field": "dwg_content.layers", "display_name": "Layers", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
-        {"field": "dwg_content.content", "display_name": "Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
-        {"field": "dwg_content.contentrev", "display_name": "Content Rev", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
-         {"field": "dwg_content.imagenames", "display_name": "Image Names", "style": "$VALUE", "use_highlights": true, "max_length": 1000}
+        {"field": "dwg_content.layers", "display_name": "dwg.Layers", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+        {"field": "dwg_content.content", "display_name": "dwg.Content", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+        {"field": "dwg_content.contentrev", "display_name": "dwg.Content Rev", "style": "$VALUE", "use_highlights": true, "max_length": 1000},
+         {"field": "dwg_content.imagenames", "display_name": "dwg.Image Names", "style": "$VALUE", "use_highlights": true, "max_length": 1000}
         
     ],
     "highlight_fields": ["content", "dwg_content.layers", "dwg_content.content", "dwg_content.contentrev", "dwg_content.imagenames","file.filename.text","file.filename"],

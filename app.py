@@ -198,7 +198,7 @@ def build_query(query_text, query_type):
     fields = CONFIG["search_fields"]
     if model is None and query_type == "Semantic":
         print("Model not loaded yet, using default match query.")
-        query_type = "match"
+        query_type = "multi_match"
     if query_type == "fuzzy":
         return {
             "multi_match": {

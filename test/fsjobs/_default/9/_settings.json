@@ -15,8 +15,8 @@
         "synonym_filter": {
           "type": "synonym",
           "lenient": true,
-		  "format": "wordnet",
-          "synonyms_path": "analysis\\wordnet_synonyms.txt",
+          "format": "wordnet",
+          "synonyms_path": "analysis/wordnet_synonyms.txt",
 		  "expand": false
         }
       },
@@ -72,6 +72,18 @@
           }
         }
       },
+	  "dwg_content":{
+		  "properties":{
+			 "content": {
+        "type": "text",
+		"analyzer": "custom_english"		
+      },
+	  "contentrev": {
+        "type": "text",
+		"analyzer": "custom_english"		
+      }
+		  }
+	  },
       "content": {
         "type": "text",
 		"analyzer": "custom_english"		
