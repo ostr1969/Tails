@@ -108,14 +108,14 @@ def run_job(name: str,model):
     exe_path = CONFIG["fscrawler"]["exe"]
     config_dir = CONFIG["fscrawler"]["config_dir"]
     # we create a job in the specified directory. also, we make sure the crawler will run only once on all files
-    cmd = " ".join([exe_path, name, "--config_dir", config_dir,"--silent", "--loop", "1"])
+    cmd = " ".join([exe_path, name, "--config_dir", config_dir, "--loop", "1"])
     # cmd = [exe_path, name, "--config_dir", config_dir, "--loop", "1"]
     # add the indexing command as well
     #cmd += f" & {python_path} index_dwg.py {name}"
     #cmd += f" & {python_path} index_llm.py {name}"
     # run the process, we have to approve the creation by sending "yes"
     start_time=time.time()
-    add_index_meta(name,0,0,0)
+    #add_index_meta(name,0,0,0)
     p = Popen(cmd, text=True)
     def watcher(start_time=start_time):
         p.wait()

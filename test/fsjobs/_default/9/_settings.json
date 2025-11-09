@@ -22,7 +22,7 @@
       },
       "analyzer": {
         "fscrawler_path": {
-          "tokenizer": "fscrawler_path"
+          "tokenizer": "filename_tokenizer"
         },
 		 "custom_english": {
           "tokenizer": "standard",
@@ -36,7 +36,13 @@
       "tokenizer": {
         "fscrawler_path": {
           "type": "path_hierarchy"
+        },
+		 
+        "filename_tokenizer": {
+          "type": "pattern",
+          "pattern": "[\\W_]+"   
         }
+      
       }
     }
   },
@@ -81,6 +87,10 @@
 	  "contentrev": {
         "type": "text",
 		"analyzer": "custom_english"		
+      },
+	  "file": {
+        "type": "text",
+		"analyzer": "fscrawler_path"		
       }
 		  }
 	  },
@@ -96,12 +106,12 @@
             "type": "keyword"
           },
           "filename": {
-            "type": "keyword",
+			  "type": "text",
+               "analyzer": "custom_english" ,            
             "store": true,
             "fields": {
-              "text": {
-                "type": "text",
-                "analyzer": "custom_english"               
+              "keyword": {
+                "type": "keyword"
               }}
           },
           "extension": {
