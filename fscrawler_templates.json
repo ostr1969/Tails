@@ -1,0 +1,348 @@
+{
+  "component_templates": [
+    {
+      "name": "fscrawler_try1_mapping_attachment",
+      "component_template": {
+        "template": {
+          "mappings": {
+            "properties": {
+              "attachment": {
+                "type": "binary",
+                "doc_values": false
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fscrawler_try1_mapping_file",
+      "component_template": {
+        "template": {
+          "mappings": {
+            "properties": {
+              "file": {
+                "properties": {
+                  "extension": {
+                    "type": "keyword"
+                  },
+                  "filename": {
+                    "store": true,
+                    "type": "keyword"
+                  },
+                  "indexed_chars": {
+                    "type": "long"
+                  },
+                  "last_accessed": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "content_type": {
+                    "type": "keyword"
+                  },
+                  "indexing_date": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "created": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "checksum": {
+                    "type": "keyword"
+                  },
+                  "filesize": {
+                    "type": "long"
+                  },
+                  "last_modified": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "url": {
+                    "index": false,
+                    "type": "keyword"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fscrawler_try1_mapping_path",
+      "component_template": {
+        "template": {
+          "settings": {
+            "index": {
+              "analysis": {
+                "analyzer": {
+                  "fscrawler_path": {
+                    "char_filter": [
+                      "windows_separator"
+                    ],
+                    "tokenizer": "fscrawler_path"
+                  }
+                },
+                "char_filter": {
+                  "windows_separator": {
+                    "type": "mapping",
+                    "mappings": [
+                      "\\\\ => /"
+                    ]
+                  }
+                },
+                "tokenizer": {
+                  "fscrawler_path": {
+                    "type": "path_hierarchy"
+                  }
+                }
+              }
+            }
+          },
+          "mappings": {
+            "properties": {
+              "path": {
+                "properties": {
+                  "virtual": {
+                    "type": "keyword",
+                    "fields": {
+                      "tree": {
+                        "fielddata": true,
+                        "analyzer": "fscrawler_path",
+                        "type": "text"
+                      },
+                      "fulltext": {
+                        "type": "text"
+                      }
+                    }
+                  },
+                  "root": {
+                    "type": "keyword"
+                  },
+                  "real": {
+                    "type": "keyword",
+                    "fields": {
+                      "tree": {
+                        "fielddata": true,
+                        "analyzer": "fscrawler_path",
+                        "type": "text"
+                      },
+                      "fulltext": {
+                        "type": "text"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fscrawler_try1_mapping_meta",
+      "component_template": {
+        "template": {
+          "mappings": {
+            "dynamic_templates": [
+              {
+                "raw_as_text": {
+                  "path_match": "meta.raw.*",
+                  "mapping": {
+                    "type": "text",
+                    "fields": {
+                      "keyword": {
+                        "ignore_above": 256,
+                        "type": "keyword"
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "properties": {
+              "meta": {
+                "properties": {
+                  "date": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "altitude": {
+                    "type": "text"
+                  },
+                  "keywords": {
+                    "type": "text"
+                  },
+                  "modifier": {
+                    "type": "text"
+                  },
+                  "latitude": {
+                    "type": "text"
+                  },
+                  "rating": {
+                    "type": "byte"
+                  },
+                  "description": {
+                    "type": "text"
+                  },
+                  "language": {
+                    "type": "keyword"
+                  },
+                  "source": {
+                    "type": "text"
+                  },
+                  "title": {
+                    "type": "text"
+                  },
+                  "creator_tool": {
+                    "type": "keyword"
+                  },
+                  "type": {
+                    "type": "text"
+                  },
+                  "relation": {
+                    "type": "text"
+                  },
+                  "contributor": {
+                    "type": "text"
+                  },
+                  "rights": {
+                    "type": "text"
+                  },
+                  "metadata_date": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "longitude": {
+                    "type": "text"
+                  },
+                  "coverage": {
+                    "type": "text"
+                  },
+                  "identifier": {
+                    "type": "text"
+                  },
+                  "comments": {
+                    "type": "text"
+                  },
+                  "author": {
+                    "type": "text"
+                  },
+                  "created": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  },
+                  "format": {
+                    "type": "text"
+                  },
+                  "publisher": {
+                    "type": "text"
+                  },
+                  "print_date": {
+                    "format": "date_optional_time",
+                    "type": "date"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fscrawler_try1_mapping_content",
+      "component_template": {
+        "template": {
+          "settings": {
+            "analysis": {
+              "filter": {
+                "english_stop": {
+                  "type": "stop",
+                  "stopwords": "_english_"
+                },
+                "english_stemmer": {
+                  "type": "stemmer",
+                  "language": "english"
+                },
+                "synonym_filter": {
+                  "type": "synonym",
+                  "lenient": true,
+                  "format": "wordnet",
+                  "synonyms_path": "analysis/wordnet_synonyms.txt",
+                  "expand": false
+                }
+              },
+              "analyzer": {
+                "fscrawler_path": {
+                  "char_filter": [
+                    "windows_separator"
+                  ],
+                  "tokenizer": "fscrawler_path"
+                },
+                "custom_english": {
+                  "tokenizer": "standard",
+                  "filter": [
+                    "lowercase",
+                    "english_stop",
+                    "english_stemmer"
+                  ]
+                }
+              },
+              "char_filter": {
+                "windows_separator": {
+                  "type": "mapping",
+                  "mappings": [
+                    "\\\\ => /"
+                  ]
+                }
+              },
+              "tokenizer": {
+                "fscrawler_path": {
+                  "type": "path_hierarchy"
+                },
+                "filename_tokenizer": {
+                  "type": "pattern",
+                  "pattern": "[\\W_]+"
+                }
+              }
+            }
+          },
+          "mappings": {
+            "properties": {
+              "content": {
+                "type": "text",
+                "analyzer": "custom_english"
+              },
+              
+              "dwg_content": {
+                "properties": {
+                  "content": {
+                    "type": "text",
+                    "analyzer": "custom_english"
+                  },
+                  "contentrev": {
+                    "type": "text",
+                    "analyzer": "custom_english"
+                  },
+                  "file": {
+                    "type": "text",
+                    "analyzer": "fscrawler_path"
+                  }
+                }
+              },
+              "content_embedding": {
+                "type": "dense_vector",
+                "dims": 384
+              },
+              "filename_embedding": {
+                "type": "dense_vector",
+                "dims": 384
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

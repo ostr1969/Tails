@@ -1,0 +1,58 @@
+---
+version: "2.2"
+
+services:
+
+  es:
+    container_name: es
+    image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
+    volumes:
+      - esdata:/usr/share/elasticsearch/data
+    ports:
+      - ${ES_PORT}:9200
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=${CLUSTER_NAME}
+      - cluster.initial_master_nodes=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.license.self_generated.type=${LICENSE}
+    mem_limit: ${MEM_LIMIT}
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+  # FSCrawler
+  fs:
+    container_name: fs
+    image: dadoonet/fscrawler:${FSCRAWLER_VERSION}
+    #restart: always
+    environment:
+      - FS_JAVA_OPTS=${FS_JAVA_OPTS}
+    volumes:
+      - /mnt/c/install/Pdfs/try1:/tmp/es:ro
+      - /mnt/c/install/tails/fsjobs:/root/.fscrawler
+      - ${PWD}/logs:/usr/share/fscrawler/logs
+      - ${PWD}/external:/usr/share/fscrawler/external
+    depends_on:
+      es:
+        condition: service_healthy
+    ports:
+      - ${FSCRAWLER_PORT}:8080
+        #command: try1 --restart --rest 
+    entrypoint: ["/bin/bash", "-c", "sleep infinity"]
+
+volumes:
+  certs:
+    driver: local
+  esdata:
+    driver: local

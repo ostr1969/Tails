@@ -1,4 +1,4 @@
-import os
+import os,docker
 from flask import Flask
 from elasticsearch import Elasticsearch
 #from sentence_transformers import SentenceTransformer
@@ -31,6 +31,5 @@ if CONFIG["fscrawler"]["config_dir"] == "None":
     CONFIG["fscrawler"]["config_dir"] = os.path.join(PROJECT_PARENT, "fsjobs")
 if CONFIG["fscrawler"]["defaults"] == "None":
     CONFIG["fscrawler"]["defaults"] = os.path.join(CONFIG["fscrawler"]["config_dir"], "_defaults.yaml")
-
 
 
