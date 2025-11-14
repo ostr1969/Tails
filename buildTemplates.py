@@ -1,11 +1,34 @@
-import json,sys,os,docker
+import json,sys,os,docker,subprocess
 from elasticsearch import Elasticsearch
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)  # insert at front to prioritize
-from __init__ import app, EsClient, CONFIG
+from __init__ import app, EsClient, CONFIG,wait_for_es
 json_path = "fscrawler_templates.json"
 
+
+STACK_VERSION="9.2.0"   
+os.environ["STACK_VERSION"] = STACK_VERSION
+os.environ["LICENSE"] = "trial"
+os.environ["ES_PORT"] = "9200" 
+os.environ["CLUSTER_NAME"] = "es"
+os.environ["MEM_LIMIT"] = "4294967296"
+os.environ["FS_JAVA_OPTS"] = "-DLOG_LEVEL=debug -DDOC_LEVEL=debug"
+os.environ["FSCRAWLER_VERSION"] = "2.10-SNAPSHOT"
+os.environ["FSCRAWLER_PORT"] = "8080"
+os.environ["DOCS_FOLDER"] = os.path.abspath("C:\\install\\Pdfs\\try1")
+os.environ["FSCRAWLER_CONFIG"] = os.path.abspath("..\\fsjobs")
+env={"STACK_VERSION": STACK_VERSION, "LICENSE": "trial", "ES_PORT": "9200",
+     "CLUSTER_NAME": "es", "MEM_LIMIT": "4294967296",
+     "FS_JAVA_OPTS": "-DLOG_LEVEL=debug -DDOC_LEVEL=debug",
+     "FSCRAWLER_VERSION": "2.10-SNAPSHOT",
+     "FSCRAWLER_PORT": "8080",
+     "DOCS_FOLDER": os.path.abspath("C:\\install\\Pdfs\\try1"),
+     "FSCRAWLER_CONFIG": os.path.abspath("..\\fsjobs")}
+# Optionally, you can change the log level settings
+
+subprocess.run(["docker", "compose","-f", "crawler.yml" ,"up", "-d","es"], check=True)
+wait_for_es(EsClient)
 with open(json_path, "r", encoding="utf-8") as f:
     data = json.load(f)
 newname="phd"
@@ -15,31 +38,15 @@ for tpl in templates:
     body = tpl["component_template"]
 
     print(f"Uploading component template: {name}")
-   # response=EsClient.cluster.put_component_template(        name=name, body=body)
+    response=EsClient.cluster.put_component_template(        name=name, body=body)
    
 
-    #print(f" → Elasticsearch response: {response}")
+    print(f" → Elasticsearch response: {response}")
 
-STACK_VERSION="9.2.0"    
-client = docker.from_env()
-client.networks.create("tails_net", driver="bridge")
-client.volumes.create(name="esdata")
-container = client.containers.run(image=f"docker.elastic.co/elasticsearch/elasticsearch:{STACK_VERSION}",
-        name="es",
-        ports={'9200/tcp': 9200},
-        environment={
-        "node.name=elasticsearch",
-        "cluster.name=tails",
-       "cluster.initial_master_nodes=elasticsearch",
-       "bootstrap.memory_lock=true",
-       "xpack.security.enabled=false",
-       "xpack.security.http.ssl.enabled=false",
-       "xpack.security.transport.ssl.enabled=false",
-       "xpack.license.self_generated.type=trial"},
-        detach=True,
-        network="tails_net",
-        volumes={"esdata": {"bind": "/usr/share/elasticsearch/data", "mode": "rw"}},
-        ulimits=[docker.types.Ulimit(name='memlock', soft=-1, hard=-1)],
-        mem_limit=4294967296,
-        healthcheck={"test": ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"], "interval": 3000000000, "timeout": 1000000000, "retries": 5}
-                                  )
+
+
+env={"FSCRAWLER_VERSION": "2.10-SNAPSHOT",
+     "FSCRAWLER_PORT": "8080",
+     "DOCS_FOLDER": os.path.abspath("C:\\install\\Pdfs\\try1"),
+     "FSCRAWLER_CONFIG": os.path.abspath("..\\fsjobs")}
+subprocess.run(["docker", "compose","-f", "crawler.yml" ,"up", "-d","fs"], check=True)

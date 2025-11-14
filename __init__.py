@@ -1,4 +1,4 @@
-import os,docker
+import os,time
 from flask import Flask
 from elasticsearch import Elasticsearch
 #from sentence_transformers import SentenceTransformer
@@ -31,5 +31,19 @@ if CONFIG["fscrawler"]["config_dir"] == "None":
     CONFIG["fscrawler"]["config_dir"] = os.path.join(PROJECT_PARENT, "fsjobs")
 if CONFIG["fscrawler"]["defaults"] == "None":
     CONFIG["fscrawler"]["defaults"] = os.path.join(CONFIG["fscrawler"]["config_dir"], "_defaults.yaml")
+def wait_for_es(es: Elasticsearch, timeout=60):
+    start = time.time()
+    while True:
+        try:
+            if es.ping():
+                print("Elasticsearch is ready!")
+                return True
+        except Exception:
+            pass
 
+        if time.time() - start > timeout:
+            raise TimeoutError("Elasticsearch did not become ready in time.")
+
+        print("Waiting for Elasticsearch...")
+        time.sleep(2)
 

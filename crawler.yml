@@ -39,10 +39,8 @@ services:
     environment:
       - FS_JAVA_OPTS=${FS_JAVA_OPTS}
     volumes:
-      - /mnt/c/install/Pdfs/try1:/tmp/es:ro
-      - /mnt/c/install/tails/fsjobs:/root/.fscrawler
-      - ${PWD}/logs:/usr/share/fscrawler/logs
-      - ${PWD}/external:/usr/share/fscrawler/external
+      - ${DOCS_FOLDER}:/tmp/es:ro
+      - ${FSCRAWLER_CONFIG}:/root/.fscrawler
     depends_on:
       es:
         condition: service_healthy
