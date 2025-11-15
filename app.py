@@ -37,15 +37,20 @@ def search():
         return render_template('search.html', hits=[], total_hits=0, page=1, query="", results_per_page=CONFIG["results_per_page"])
     
     # Build the query based on the selected query type
-    query_body = build_query(query, query_type)
-    fields={field: {} for field in CONFIG["highlight_fields"]}
+    query_body = build_query(query, query_type )
+    highlight_query=build_query(query, "multi_match" )
+    highlight_query["multi_match"]["analyzer"]="stop"
+    print("Highlight query:", json.dumps(highlight_query, indent=2))
+    fields={field: {"highlight_query": highlight_query} for field in CONFIG["highlight_fields"]}
+   
+    print("Query body:", json.dumps(query_body, indent=2))
     highlight={
             'fields': fields,
             'pre_tags': ['<em class="highlight">'],
             'post_tags': ['</em>']
             
     }
-    
+    print("Highlight:", json.dumps(highlight, indent=2))
     # Perform a simple query on the 'your_index_name' index
     with open("debug_query.es", "w", encoding="utf-8") as f:
         json.dump({"query":query_body,"highlight":highlight,"size":1000}, f, ensure_ascii=False, indent=2)
@@ -235,6 +240,34 @@ def build_query(query_text, query_type):
                 }
             }
         }
+    elif query_type == "function_score":
+        query_vector = model.encode(query_text).tolist()
+        return {
+            "function_score": {
+                "query": {
+                    "multi_match": {
+                        "query": query_text,
+                        "fields": fields,
+                        
+                    }
+                },
+                "boost_mode": "multiply",
+                "functions": [
+                    {
+            "script_score": {
+              
+                "script": {
+                    "source": """double s1=cosineSimilarity(params.query_vector, '{}')+1 ; 
+                    double s2=cosineSimilarity(params.query_vector, '{}')+1 ;
+                     return Math.max(s1, s2);""".format(CONFIG["semantic_model"]["content_embedding_field"], 
+                                                        CONFIG["semantic_model"]["filename_embedding_field"]),
+                    "params": {"query_vector": query_vector}
+                }
+            }
+        }
+                ]
+            }
+        }    
     elif query_type == "wildcard":
         # Wildcard doesn't support multi_match — build OR terms per field
         should_clauses = [{"wildcard": {f: f"{query_text}*"}} for f in fields]
