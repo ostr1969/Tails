@@ -344,5 +344,29 @@
         }
       }
     }
+  ],
+  "index_templates": [
+    {
+      "name": "fscrawler_try1_docs",
+      "index_template": {
+        "index_patterns": [
+          "try1"
+        ],
+        "composed_of": [
+          "fscrawler_try1_mapping_attachment",
+          "fscrawler_try1_mapping_file",
+          "fscrawler_try1_mapping_path",
+          "fscrawler_try1_mapping_meta",
+          "fscrawler_try1_mapping_content"
+        ],
+        "template": {
+          "settings": {
+            "number_of_shards": 1,
+            "number_of_replicas": 0
+          }
+        },
+        "priority": 500
+      }
+    }
   ]
 }

@@ -43,7 +43,7 @@ def run_fs_docker_job(name: str,target_dir: str):
     FSCRAWLER_PORT = CONFIG["docker_env"]["FSCRAWLER_PORT"]  
     DOCS_FOLDER= os.path.abspath(target_dir)
     FSCRAWLER_CONFIG= os.path.abspath(CONFIG["fscrawler"]["config_dir"])
-    
+    subprocess.run(["docker", "rm", "-f", "fs"], stdout=PIPE, stderr=PIPE)
     return subprocess.run(["docker", "run",  "--name", "fs", 
                 "--env", f"FS_JAVA_OPTS={FS_JAVA_OPTS}", 
                 "-v", f"{DOCS_FOLDER}:{win2linux_path(DOCS_FOLDER)}:ro", 
@@ -81,7 +81,8 @@ def load_defaults_to_job(name: str):
         os.mkdir(jobDir)
     with open(settingDir, "w") as f:
         yaml.dump(d, f)
-    print("Loaded default settings to", settingDir)    
+    create_job_templates(EsClient,name)
+    print("Loaded default settings to", settingDir ," and created templates in elasticsearch")    
 
 def get_job_setting(name: str, key: str):
     with open(get_job_settings_path(name), "r") as f:
@@ -202,6 +203,17 @@ def jobs_status():
                    }
             jobs.append(job)
             continue
+        numdocs = EsClient.count(index=name)["count"]
+        if not "_meta" in info[name]["mappings"] and numdocs>0:#index exists but no documents yet
+            status = "indexing"
+            job = {"name": name, "indexed_files": numdocs, "directory": job_docs_folder,
+                   "status": status,
+                   "fs_indexing_seconds": None,
+                   "dwg_indexing_seconds": None,
+                   "semantic_indexing_seconds": None
+                   }
+            jobs.append(job)
+            continue
         if info[name]["mappings"]["_meta"].get("semantic_indexing_seconds", None) !="0.0":
             status = "completed"
         else:
@@ -231,15 +243,22 @@ def create_job_templates(esclient, newname:str):
     with open(json_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     templates = data.get("component_templates", [])
+    comps=[]
     for tpl in templates:
         name = tpl["name"].replace("try1", newname)
+        comps.append(name)
         body = tpl["component_template"]
 
         print(f"Uploading component template: {name}")
         response=EsClient.cluster.put_component_template(        name=name, body=body)
+    index_template=data.get("index_templates", [])[0]
+    iname = index_template["name"].replace("try1", newname)
+    body= index_template["index_template"]  
+    body["composed_of"] = comps 
+    body["index_patterns"] = [newname] 
+    response=esclient.indices.put_index_template(name=iname, body=body)
 
-
-        print(f" → Elasticsearch response: {response}")
+    print(f" → Elasticsearch response: {response}")
 def compose_up_es():
     os.environ["STACK_VERSION"] = CONFIG["docker_env"]["STACK_VERSION"]
     os.environ["LICENSE"] = CONFIG["docker_env"]["LICENSE"]
@@ -249,7 +268,7 @@ def compose_up_es():
     os.environ["ES_PATH"] = os.path.abspath("..\\es_data")
     subprocess.run(["docker", "compose","-f", "crawler.yml" ,"up", "-d","es"], check=True)
 if __name__ == "__main__":
-    name="test"
+    name="try"
     foldertoindex="C:\\install\\Pdfs\\try1"
     #foldertoindex="C:\\install\\Pdfs\\PHD_litreture"
     if not is_es_alive(EsClient):
@@ -258,6 +277,7 @@ if __name__ == "__main__":
         wait_for_es(EsClient)
     create_job_templates(EsClient,name)
     create_new_job(name)
+    sys.exit(1)
     #edit_job_setting(name, "fs.url", foldertoindex)
     edit_job_setting(name, "fs.ocr.enabled", False)
     edit_job_setting(name, "fs.ocr.data_path", "")

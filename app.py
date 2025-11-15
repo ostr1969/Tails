@@ -125,8 +125,8 @@ def fscraller_index():
         if fsutils.create_new_job(name):            
             fsutils.edit_job_setting(name, "fs.url", win2linux_path(target_dir)) 
             fsutils.edit_job_setting(name, "fs.ocr.enabled", useocr)
-            fsutils.edit_job_setting(name, "fs.ocr.data_path", tess_data_path)
-            fsutils.edit_job_setting(name, "fs.ocr.path", tess_path)            
+            #fsutils.edit_job_setting(name, "fs.ocr.data_path", tess_data_path)
+            #fsutils.edit_job_setting(name, "fs.ocr.path", tess_path)            
             fsutils.run_job(name,model,target_dir)
     CONFIG["index"] = fsutils.get_all_jobs()
     return render_template("fscrawler.html",j=0)

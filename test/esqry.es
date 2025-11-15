@@ -251,3 +251,11 @@ get /phd/_search
     }
   }
 }
+
+GET /try/_search
+{"query": {"match_all": {}}, "size": 0,
+"aggs": {"file_extensions": {
+            "terms": {
+                "field": "file.extension",
+                "size": 9
+                }            }}}
