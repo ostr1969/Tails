@@ -4,7 +4,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 python_path = os.path.join(script_dir, "..", "python", "python.exe")
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
-from __init__ import CONFIG, EsClient,wait_for_es,is_es_alive,win2linux_path,index_exists
+from __init__ import CONFIG, EsClient,wait_for_es,is_es_alive,win2linux_path,index_exists,linux2win_path
 from elasticsearch.exceptions import NotFoundError
 import shutil,subprocess
 from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
@@ -125,7 +125,7 @@ def run_job(name: str,model, target_dir: str):
    
     start_time=time.time()
     zero_index_meta(name)
-    #p = Popen(cmd, text=True)
+    #watcher run 3 tasks: fscrawler, dwg indexing, semantic indexing in background thread
     p=None
     def watcher(start_time=start_time):
         p=run_fs_docker_job(name,target_dir)
@@ -180,9 +180,10 @@ def jobs_status():
     jobs = []
     # {"name": "job1", "directory": "C:", "indexed_files": 30000, "status": "running"}
     for name in get_all_jobs():
+        job_docs_folder=linux2win_path(get_job_setting(name, "fs.url"))
         if not index_exists(EsClient, name):#found folder but no index
             status = "missing"
-            job = {"name": name, "indexed_files": 0, "directory": get_job_setting(name, "fs.url"),
+            job = {"name": name, "indexed_files": 0, "directory": job_docs_folder,
                    "status": status,
                    "fs_indexing_seconds": None,
                    "dwg_indexing_seconds": None,
@@ -193,7 +194,7 @@ def jobs_status():
         info = EsClient.indices.get_mapping(index=name)
         if not name in info:
             status = "not started"
-            job = {"name": name, "indexed_files": 0, "directory": get_job_setting(name, "fs.url"),
+            job = {"name": name, "indexed_files": 0, "directory": job_docs_folder,
                    "status": status,
                    "fs_indexing_seconds": None,
                    "dwg_indexing_seconds": None,
@@ -205,7 +206,7 @@ def jobs_status():
             status = "completed"
         else:
             status = "indexing" #if index exists but no semantic indexing(last stage) time yet
-        job = {"name": name, "indexed_files": EsClient.count(index=name)["count"], "directory": get_job_setting(name, "fs.url"),
+        job = {"name": name, "indexed_files": EsClient.count(index=name)["count"], "directory":job_docs_folder,
                "status": status,
                "fs_indexing_seconds": info[name]["mappings"]["_meta"].get("fs_indexing_seconds", None),
                "dwg_indexing_seconds": info[name]["mappings"]["_meta"].get("dwg_indexing_seconds", None),

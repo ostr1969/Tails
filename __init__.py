@@ -64,6 +64,14 @@ def win2linux_path(win_path: str) -> str:
     drive_letter = drive.rstrip(':').lower()
     linux_path = '/' + drive_letter + path.replace('\\', '/')
     return linux_path
+def linux2win_path(linux_path: str) -> str:
+    """Convert a Linux path to a Windows path."""
+    # Example: /c/path/to/folder -> C:\path\to\folder
+    parts = linux_path.lstrip('/').split('/', 1)
+    drive_letter = parts[0].upper() + ':'
+    path = parts[1] if len(parts) > 1 else ''
+    win_path = drive_letter + '\\' + path.replace('/', '\\')
+    return win_path
 def index_exists(es, index_name: str) -> bool:
     try:
         return es.indices.exists(index=index_name)
