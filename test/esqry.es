@@ -200,7 +200,7 @@ GET /articles/_analyze
   "text": "machine learning for disease prediction"
 }
 
-GET /articles/_search?filter_path=hits.hits._score,hits.hits._source.content
+GET /test/_search?filter_path=hits.hits._score,hits.hits._source.content
 {
       "query": {
         "script_score": {
@@ -219,3 +219,5 @@ GET /articles/_search?filter_path=hits.hits._score,hits.hits._source.content
         }
     }
     }
+GET /test/_search
+{"query": {"exists": {"field": "has"}}}

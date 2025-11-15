@@ -1,6 +1,6 @@
 import os,time
 from flask import Flask
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, NotFoundError
 #from sentence_transformers import SentenceTransformer
 import json, subprocess
 #from threading import Thread
@@ -57,6 +57,18 @@ def is_es_alive(es: Elasticsearch, timeout=10):
             pass
         time.sleep(1)
     return False
+def win2linux_path(win_path: str) -> str:
+    """Convert a Windows path to a Linux path for Docker volume mapping."""
+    # Example: C:\path\to\folder -> /c/path/to/folder
+    drive, path = os.path.splitdrive(win_path)
+    drive_letter = drive.rstrip(':').lower()
+    linux_path = '/' + drive_letter + path.replace('\\', '/')
+    return linux_path
+def index_exists(es, index_name: str) -> bool:
+    try:
+        return es.indices.exists(index=index_name)
+    except NotFoundError:
+        return False
 def compose_up_es():
     os.environ["STACK_VERSION"] = CONFIG["docker_env"]["STACK_VERSION"]
     os.environ["LICENSE"] = CONFIG["docker_env"]["LICENSE"]

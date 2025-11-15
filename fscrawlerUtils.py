@@ -4,11 +4,12 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 python_path = os.path.join(script_dir, "..", "python", "python.exe")
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)
-from __init__ import CONFIG, EsClient,wait_for_es,is_es_alive
+from __init__ import CONFIG, EsClient,wait_for_es,is_es_alive,win2linux_path,index_exists
 from elasticsearch.exceptions import NotFoundError
 import shutil,subprocess
 from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
 import yaml
+import regex as re
 from index_llm import Update_all_semantics
 from index_dwg import Update_all_dwgs_dwgs
 
@@ -42,9 +43,10 @@ def run_fs_docker_job(name: str,target_dir: str):
     FSCRAWLER_PORT = CONFIG["docker_env"]["FSCRAWLER_PORT"]  
     DOCS_FOLDER= os.path.abspath(target_dir)
     FSCRAWLER_CONFIG= os.path.abspath(CONFIG["fscrawler"]["config_dir"])
+    
     return subprocess.run(["docker", "run",  "--name", "fs", 
                 "--env", f"FS_JAVA_OPTS={FS_JAVA_OPTS}", 
-                "-v", f"{DOCS_FOLDER}:/tmp/es:ro", 
+                "-v", f"{DOCS_FOLDER}:{win2linux_path(DOCS_FOLDER)}:ro", 
                 "-v", f"{FSCRAWLER_CONFIG}:/root/.fscrawler",
                 "-p", f"{FSCRAWLER_PORT}:8080", 
                 "--rm",
@@ -120,22 +122,15 @@ def run_job(name: str,model, target_dir: str):
     # before anything we make sure that the job was created
     #get_job_settings_path(name)
     # now run the job
-    #exe_path = CONFIG["fscrawler"]["exe"]
-    #config_dir = CONFIG["fscrawler"]["config_dir"]
-    # we create a job in the specified directory. also, we make sure the crawler will run only once on all files
-    #cmd = " ".join([exe_path, name, "--config_dir", config_dir, "--loop", "1"])
-    # cmd = [exe_path, name, "--config_dir", config_dir, "--loop", "1"]
-    # add the indexing command as well
-    #cmd += f" & {python_path} index_dwg.py {name}"
-    #cmd += f" & {python_path} index_llm.py {name}"
-    # run the process, we have to approve the creation by sending "yes"
+   
     start_time=time.time()
-    #add_index_meta(name,0,0,0)
+    zero_index_meta(name)
     #p = Popen(cmd, text=True)
     p=None
     def watcher(start_time=start_time):
         p=run_fs_docker_job(name,target_dir)
         fs_time=time.time()-start_time
+        EsClient.indices.refresh(index=name)
         print(f"FS Crawler job {name} finished in {fs_time:.1f} seconds.")
         add_index_meta(name,fs_time,0,0)
         start_time=time.time()
@@ -143,12 +138,23 @@ def run_job(name: str,model, target_dir: str):
         dwg_time= time.time()-start_time
         add_index_meta(name, fs_time, dwg_time, 0)
         start_time=time.time()
+        
         Update_all_semantics(EsClient, name, model)
         semantic_time= time.time()-start_time
         add_index_meta(name, fs_time, dwg_time, semantic_time)
     threading.Thread(target=watcher, daemon=True, args=(start_time,)).start()
     FSCRAWLER_JOBS[name] = p
     return p
+def zero_index_meta(index_name:str):
+    if not index_exists(EsClient, index_name):
+        return
+    EsClient.indices.put_mapping(
+    index=index_name,
+    _meta={        "fs_indexing_seconds":"0.0",
+        "dwg_indexing_seconds": "0.0" ,
+        "semantic_indexing_seconds": "0.0" 
+    }
+    )
 def add_index_meta(index_name:str,fs_indexing_time:float,dwg_indexing_time:float,semantic_indexing_time:float):
     EsClient.indices.put_mapping(
     index=index_name,
@@ -168,17 +174,13 @@ def stop_job(name: str):
         # else, use the Popen.kill method to kill the process
         FSCRAWLER_JOBS[name].terminate()
 
-def index_exists(es, index_name: str) -> bool:
-    try:
-        return es.indices.exists(index=index_name)
-    except NotFoundError:
-        return False
+
 def jobs_status():
     """Method to return information on all existing jobs in json format"""
     jobs = []
     # {"name": "job1", "directory": "C:", "indexed_files": 30000, "status": "running"}
     for name in get_all_jobs():
-        if not index_exists(EsClient, name):
+        if not index_exists(EsClient, name):#found folder but no index
             status = "missing"
             job = {"name": name, "indexed_files": 0, "directory": get_job_setting(name, "fs.url"),
                    "status": status,
@@ -202,7 +204,7 @@ def jobs_status():
         if info[name]["mappings"]["_meta"].get("semantic_indexing_seconds", None) !="0.0":
             status = "completed"
         else:
-            status = "indexing"
+            status = "indexing" #if index exists but no semantic indexing(last stage) time yet
         job = {"name": name, "indexed_files": EsClient.count(index=name)["count"], "directory": get_job_setting(name, "fs.url"),
                "status": status,
                "fs_indexing_seconds": info[name]["mappings"]["_meta"].get("fs_indexing_seconds", None),

@@ -9,7 +9,7 @@ if script_dir not in sys.path:
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
 from flask import render_template, request, send_file, jsonify, url_for, redirect,Flask
-from __init__ import app, EsClient, CONFIG,is_es_alive,wait_for_es,compose_up_es
+from __init__ import app, EsClient, CONFIG,is_es_alive,wait_for_es,compose_up_es,win2linux_path
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
 global model
@@ -118,7 +118,7 @@ def fscraller_index():
             print("Not using OCR")
         
         if fsutils.create_new_job(name):            
-            #fsutils.edit_job_setting(name, "fs.url", target_dir) url not needed because of volume mapping
+            fsutils.edit_job_setting(name, "fs.url", win2linux_path(target_dir)) 
             fsutils.edit_job_setting(name, "fs.ocr.enabled", useocr)
             fsutils.edit_job_setting(name, "fs.ocr.data_path", tess_data_path)
             fsutils.edit_job_setting(name, "fs.ocr.path", tess_path)            

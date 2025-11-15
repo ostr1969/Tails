@@ -1,8 +1,8 @@
 ---
 name: "data"
 fs:
-  url: "C:\\Users\\ostr\\OneDrive\\PHD_litreture"
-  update_rate: "15m"
+  url: "/tmp/es"
+  update_rate: "16m"
   excludes:
   - "*/~*"
   json_support: false
@@ -21,16 +21,17 @@ fs:
   indexed_chars: "1000000"
   ocr:
     language: "eng"
-    enabled: true
+    enabled: false
     pdf_strategy: "auto"
     path: "C:\\install\\tails\\Tesseract-OCR"
     data_path: "C:\\install\\tails\\Tesseract-OCR\\tessdata"
   follow_symlinks: false
 elasticsearch:
-  urls: "http://127.0.0.1:9200"
+  urls:
+  - "http://127.0.0.1:9200"
   bulk_size: 100
   flush_interval: "5s"
   byte_size: "10mb"
   ssl_verification: false
-  push_templates: true
-  semantic_search: true
+  push_templates: false
+  semantic_search: false

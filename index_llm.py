@@ -2,7 +2,7 @@ import os,sys,time
 #script_dir = os.path.dirname(os.path.abspath(__file__))
 #if script_dir not in sys.path:
 #    sys.path.insert(0, script_dir)  # insert at front to prioritize
-from __init__ import EsClient, CONFIG
+from __init__ import EsClient, CONFIG, index_exists,wait_for_es
 import subprocess
 import json
 import argparse
@@ -36,11 +36,18 @@ def build_action(doc,index, model):
     action["doc"] = {CONTENT_EMBEDDING: embedding1,FILENAME_EMBEDDING: embedding2,"has": True}
     return action
 def Update_all_semantics(es_client, index_name,model):
-    query = {"query": {"match_all": {}}}
-    total_documents_with_content = es_client.count(index=CONFIG["index"], query={"exists": {"field": "content"}})['count']
+    query={"query": {"exists": {"field": "content"}}}
+    #query ={"exists": {"field": "content"}}
+    total_documents_with_content = es_client.count(index=index_name, query=query["query"])['count']
     scroll = helpers.scan(client=es_client, index=index_name, query=query, preserve_order=False)
-    print(f"*** START INDEXING SEMANTIC EMBEDDINGS FOR INDEX {index_name}***, total documents: {total_documents_with_content}")
+    print(f"*** START INDEXING SEMANTIC EMBEDDINGS FOR INDEX {index_name}, total documents: {total_documents_with_content}")
     actions=[]
+    # count = sum(1 for _ in helpers.scan(
+    # es_client,
+    # index=index_name,
+    # query=query
+    # ))
+    # print(f"Total documents in {index_name} with content to process: {count}")
     count = 0
     start_time=time.time()
     #model = SentenceTransformer(MODEL_NAME)
