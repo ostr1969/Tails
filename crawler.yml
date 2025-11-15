@@ -7,7 +7,7 @@ services:
     container_name: es
     image: docker.elastic.co/elasticsearch/elasticsearch:${STACK_VERSION}
     volumes:
-      - esdata:/usr/share/elasticsearch/data
+      - ${ES_PATH}:/usr/share/elasticsearch/data
     ports:
       - ${ES_PORT}:9200
     environment:
@@ -29,28 +29,36 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - tails_net
 
 
   # FSCrawler
   fs:
     container_name: fs
-    image: dadoonet/fscrawler:${FSCRAWLER_VERSION}
+    image: dadoonet/fscrawler:2.10-SNAPSHOT
     #restart: always
     environment:
-      - FS_JAVA_OPTS=${FS_JAVA_OPTS}
+      - FS_JAVA_OPTS="-DLOG_LEVEL=debug -DDOC_LEVEL=debug"
     volumes:
-      - ${DOCS_FOLDER}:/tmp/es:ro
-      - ${FSCRAWLER_CONFIG}:/root/.fscrawler
+      - ..\docs:/tmp/es:ro
+      - ..\fsjobs:/root/.fscrawler
     depends_on:
       es:
         condition: service_healthy
     ports:
-      - ${FSCRAWLER_PORT}:8080
+      - 8080:8080
         #command: try1 --restart --rest 
     entrypoint: ["/bin/bash", "-c", "sleep infinity"]
+    networks:
+      - tails_net
 
 volumes:
   certs:
     driver: local
   esdata:
     driver: local
+networks:
+  tails_net:
+    name: tails_net
+    driver: bridge

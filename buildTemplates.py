@@ -7,26 +7,16 @@ from __init__ import app, EsClient, CONFIG,wait_for_es
 json_path = "fscrawler_templates.json"
 
 
-STACK_VERSION="9.2.0"   
-os.environ["STACK_VERSION"] = STACK_VERSION
-os.environ["LICENSE"] = "trial"
-os.environ["ES_PORT"] = "9200" 
-os.environ["CLUSTER_NAME"] = "es"
-os.environ["MEM_LIMIT"] = "4294967296"
-os.environ["FS_JAVA_OPTS"] = "-DLOG_LEVEL=debug -DDOC_LEVEL=debug"
-os.environ["FSCRAWLER_VERSION"] = "2.10-SNAPSHOT"
-os.environ["FSCRAWLER_PORT"] = "8080"
-os.environ["DOCS_FOLDER"] = os.path.abspath("C:\\install\\Pdfs\\try1")
-os.environ["FSCRAWLER_CONFIG"] = os.path.abspath("..\\fsjobs")
-env={"STACK_VERSION": STACK_VERSION, "LICENSE": "trial", "ES_PORT": "9200",
-     "CLUSTER_NAME": "es", "MEM_LIMIT": "4294967296",
-     "FS_JAVA_OPTS": "-DLOG_LEVEL=debug -DDOC_LEVEL=debug",
-     "FSCRAWLER_VERSION": "2.10-SNAPSHOT",
-     "FSCRAWLER_PORT": "8080",
-     "DOCS_FOLDER": os.path.abspath("C:\\install\\Pdfs\\try1"),
-     "FSCRAWLER_CONFIG": os.path.abspath("..\\fsjobs")}
-# Optionally, you can change the log level settings
+  
+os.environ["STACK_VERSION"] = CONFIG["docker_env"]["STACK_VERSION"]
+os.environ["LICENSE"] = CONFIG["docker_env"]["LICENSE"]
+os.environ["ES_PORT"] = CONFIG["docker_env"]["ES_PORT"]
+os.environ["CLUSTER_NAME"] = CONFIG["docker_env"]["CLUSTER_NAME"]
+os.environ["MEM_LIMIT"] = CONFIG["docker_env"]["MEM_LIMIT"]  
+os.environ["ES_PATH"] = os.path.abspath("..\\es_data")
 
+# Optionally, you can change the log level settings
+#subprocess.run(["docker", "network", "create", "tails_net"], check=True)
 subprocess.run(["docker", "compose","-f", "crawler.yml" ,"up", "-d","es"], check=True)
 wait_for_es(EsClient)
 with open(json_path, "r", encoding="utf-8") as f:
@@ -45,8 +35,18 @@ for tpl in templates:
 
 
 
-env={"FSCRAWLER_VERSION": "2.10-SNAPSHOT",
-     "FSCRAWLER_PORT": "8080",
-     "DOCS_FOLDER": os.path.abspath("C:\\install\\Pdfs\\try1"),
-     "FSCRAWLER_CONFIG": os.path.abspath("..\\fsjobs")}
-subprocess.run(["docker", "compose","-f", "crawler.yml" ,"up", "-d","fs"], check=True)
+FS_JAVA_OPTS = CONFIG["docker_env"]["FS_JAVA_OPTS"]
+FSCRAWLER_VERSION = CONFIG["docker_env"]["FSCRAWLER_VERSION"]
+FSCRAWLER_PORT = CONFIG["docker_env"]["FSCRAWLER_PORT"]  
+DOCS_FOLDER= os.path.abspath("C:\\install\\Pdfs\\try1")
+FSCRAWLER_CONFIG= os.path.abspath("..\\fsjobs")
+
+subprocess.run(["docker", "run", "-d", "--name", "fs", 
+                "--env", f"FS_JAVA_OPTS={FS_JAVA_OPTS}", 
+                "-v", f"{DOCS_FOLDER}:/tmp/es:ro", 
+                "-v", f"{FSCRAWLER_CONFIG}:/root/.fscrawler",
+                "-p", f"{FSCRAWLER_PORT}:8080", 
+                "--rm",
+                "--network", "tails_net", 
+                f"dadoonet/fscrawler:{FSCRAWLER_VERSION}", 
+                newname, "--restart", "--loop", "1"])
