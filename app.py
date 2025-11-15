@@ -9,7 +9,7 @@ if script_dir not in sys.path:
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
 from flask import render_template, request, send_file, jsonify, url_for, redirect,Flask
-from __init__ import app, EsClient, CONFIG
+from __init__ import app, EsClient, CONFIG,is_es_alive,wait_for_es,compose_up_es
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
 global model
@@ -117,13 +117,12 @@ def fscraller_index():
         else:
             print("Not using OCR")
         
-        if fsutils.create_new_job(name):
-            fsutils.load_defaults_to_job(name)
-            fsutils.edit_job_setting(name, "fs.url", target_dir)
+        if fsutils.create_new_job(name):            
+            #fsutils.edit_job_setting(name, "fs.url", target_dir) url not needed because of volume mapping
             fsutils.edit_job_setting(name, "fs.ocr.enabled", useocr)
             fsutils.edit_job_setting(name, "fs.ocr.data_path", tess_data_path)
             fsutils.edit_job_setting(name, "fs.ocr.path", tess_path)            
-            fsutils.run_job(name,model)
+            fsutils.run_job(name,model,target_dir)
     CONFIG["index"] = fsutils.get_all_jobs()
     return render_template("fscrawler.html",j=0)
 
@@ -287,11 +286,16 @@ def load_model():
     model = SentenceTransformer(CONFIG["semantic_model"]["model_name"])
     #time.sleep(10)
     print("Model loaded.")
-
+def load_elasticsearch():
+    if not is_es_alive(EsClient):
+        print("Elasticsearch is not reachable. Starting by docker compose...") 
+        compose_up_es()
+    wait_for_es(EsClient)
 
        
 if __name__ == '__main__':
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     #load_model()                # runs once
         Thread(target=load_model, daemon=True).start()  # runs once
+        Thread(target=load_elasticsearch, daemon=True).start()  # runs once
     app.run(debug=True)

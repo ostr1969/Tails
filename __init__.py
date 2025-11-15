@@ -2,7 +2,7 @@ import os,time
 from flask import Flask
 from elasticsearch import Elasticsearch
 #from sentence_transformers import SentenceTransformer
-import json
+import json, subprocess
 #from threading import Thread
 
 #import tkinter
@@ -46,4 +46,23 @@ def wait_for_es(es: Elasticsearch, timeout=60):
 
         print("Waiting for Elasticsearch...")
         time.sleep(2)
-
+def is_es_alive(es: Elasticsearch, timeout=10):
+    """Return True if Elasticsearch responds to ping within timeout."""
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        try:
+            if es.ping():
+                return True
+        except Exception:
+            pass
+        time.sleep(1)
+    return False
+def compose_up_es():
+    os.environ["STACK_VERSION"] = CONFIG["docker_env"]["STACK_VERSION"]
+    os.environ["LICENSE"] = CONFIG["docker_env"]["LICENSE"]
+    os.environ["ES_PORT"] = CONFIG["docker_env"]["ES_PORT"]
+    os.environ["CLUSTER_NAME"] = CONFIG["docker_env"]["CLUSTER_NAME"]
+    os.environ["MEM_LIMIT"] = CONFIG["docker_env"]["MEM_LIMIT"]  
+    os.environ["ES_PATH"] = os.path.abspath("..\\es_data")
+    subprocess.run(["docker", "compose","-f", "crawler.yml" ,"up", "-d","es"], check=True)
+    #wait_for_es(EsClient)
