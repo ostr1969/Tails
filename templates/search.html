@@ -259,6 +259,24 @@
   background: linear-gradient(90deg, #4f46e5, #2563eb);
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
 }
+#backToTop {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: white;
+    padding: 12px 15px;
+    border-radius: 50%;
+    font-size: 22px;
+    text-decoration: none;
+    display: none;   /* hidden by default */
+    opacity: 0.7;
+    transition: opacity 0.3s;
+}
+
+#backToTop:hover {
+    opacity: 1;
+}
     </style>
    <script>
         const queryHelp = {
@@ -297,6 +315,10 @@
                 "script": {"source": "cosineSimilarity(params.query_vector, 'embedding') + 1.0"),
                            "params": {"query_vector": query_vector}} }}`
             }
+        "function_score": {
+                desc: "Boost by LLM.",
+                example: "Do a standard query and boost results by semantic similarity using a script_score."
+             }
         };
 
         function showHelp() {
@@ -312,12 +334,21 @@
                 `;
             }
         }
+        window.addEventListener("scroll", function() {
+    const btn = document.getElementById("backToTop");
+    btn.style.display = window.scrollY > 300 ? "block" : "none";
+});
+
+document.getElementById("backToTop").addEventListener("click", function(e) {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+});
     </script>
 </head>
 <body >
    <body>
     <img src="{{ url_for('static', filename='images/logo.svg') }}" alt="" class="logo-image">
-
+    <a href="#" id="backToTop">&#8679;</a>
    <form action="/" method="post" class="search-container">
     <div class="flex-container">
         <input type="text" id="query" name="query" value="{{ query }}" class="search-bar" placeholder="Search scientific articles..." required>
@@ -333,6 +364,7 @@
             <select id="query_type" name="query_type" class="advanced-select" onchange="showHelp()">
                 <option value="match" {% if query_type == 'match' %}selected{% endif %}>Match (default)</option>
                 <option value="semantic" {% if query_type == 'semantic' %}selected{% endif %}>Semantic (contextual)</option>
+                <option value="function_score" {% if query_type == 'function_score' %}selected{% endif %}>Semantic Boost</option>
     <option value="fuzzy" {% if query_type == 'fuzzy' %}selected{% endif %}>Fuzzy (typo-tolerant)</option>
     <option value="phrase" {% if query_type == 'phrase' %}selected{% endif %}>Phrase (exact sequence)</option>
     <option value="wildcard" {% if query_type == 'wildcard' %}selected{% endif %}>Wildcard</option>

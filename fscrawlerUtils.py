@@ -121,6 +121,7 @@ def run_job(name: str,model):
         p.wait()
         fs_time=time.time()-start_time
         add_index_meta(name,fs_time,0,0)
+        EsClient.indices.refresh(index=name)
         start_time=time.time()
         Update_all_dwgs_dwgs(EsClient, name)
         dwg_time= time.time()-start_time

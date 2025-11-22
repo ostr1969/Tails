@@ -2,3 +2,4 @@
 /__init__.py.bak
 /__pycache__
 /packages
+*.bak

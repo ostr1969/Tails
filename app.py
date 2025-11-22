@@ -9,7 +9,7 @@ if script_dir not in sys.path:
 tess_data_path=os.path.join(script_dir,"..","Tesseract-OCR","tessdata")  
 tess_path=os.path.join(script_dir,"..","Tesseract-OCR")  
 from flask import render_template, request, send_file, jsonify, url_for, redirect,Flask
-from __init__ import app, EsClient, CONFIG
+from __init__ import app, EsClient, CONFIG,is_es_alive,wait_for_es
 from SearchHit import hits_from_resutls
 import fscrawlerUtils as fsutils
 global model
@@ -38,7 +38,12 @@ def search():
     
     # Build the query based on the selected query type
     query_body = build_query(query, query_type)
-    fields={field: {} for field in CONFIG["highlight_fields"]}
+    highlight_query=build_query(query, "multi_match" )
+    highlight_query["multi_match"]["analyzer"]="stop"
+    print("Highlight query:", json.dumps(highlight_query, indent=2))
+    fields={field: {"highlight_query": highlight_query} for field in CONFIG["highlight_fields"]}
+   
+    print("Query body:", json.dumps(query_body, indent=2))
     highlight={
             'fields': fields,
             'pre_tags': ['<em class="highlight">'],
@@ -236,6 +241,34 @@ def build_query(query_text, query_type):
                 }
             }
         }
+    elif query_type == "function_score":
+        query_vector = model.encode(query_text).tolist()
+        return {
+            "function_score": {
+                "query": {
+                    "multi_match": {
+                        "query": query_text,
+                        "fields": fields,
+                        
+                    }
+                },
+                "boost_mode": "multiply",
+                "functions": [
+                    {
+            "script_score": {
+              
+                "script": {
+                    "source": """double s1=cosineSimilarity(params.query_vector, '{}')+1 ; 
+                    double s2=cosineSimilarity(params.query_vector, '{}')+1 ;
+                     return Math.max(s1, s2);""".format(CONFIG["semantic_model"]["content_embedding_field"], 
+                                                        CONFIG["semantic_model"]["filename_embedding_field"]),
+                    "params": {"query_vector": query_vector}
+                }
+            }
+        }
+                ]
+            }
+        }    
     elif query_type == "wildcard":
         # Wildcard doesn't support multi_match — build OR terms per field
         should_clauses = [{"wildcard": {f: f"{query_text}*"}} for f in fields]
@@ -294,4 +327,7 @@ if __name__ == '__main__':
     if os.environ.get("WERKZEUG_RUN_MAIN") == "true":
     #load_model()                # runs once
         Thread(target=load_model, daemon=True).start()  # runs once
+    if not is_es_alive(EsClient):
+        print("Elasticsearch is not reachable. start outside with the start_elastic.bat script") 
+        sys.exit(1)    
     app.run(debug=True)

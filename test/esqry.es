@@ -219,3 +219,12 @@ GET /articles/_search?filter_path=hits.hits._score,hits.hits._source.content
         }
     }
     }
+
+get try/_search
+    {
+        "query": {
+            "term": {
+                "file.extension": "dwg"
+            }
+        }
+    }
