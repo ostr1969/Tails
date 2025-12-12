@@ -1,0 +1,19 @@
+FROM ubuntu:22.04
+
+# Python + FastAPI + Uvicorn
+RUN apt update && apt install -y python3 python3-pip  dotnet-sdk-6.0 && pip3 install fastapi uvicorn python-multipart
+
+WORKDIR /app
+
+# Copy your binary
+COPY ./net6.0/* /app/
+COPY  ./encode_list.csv /app/Resources/encode_list.csv
+COPY  ./Fonts /app/Resources/Fonts
+RUN chmod +x /app/DwgTextract
+
+# Copy API code
+COPY api.py /app/api.py
+
+EXPOSE 4100
+
+CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "4100"]

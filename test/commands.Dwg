@@ -1,0 +1,19 @@
+
+to run:
+	docker run -p 4100:4100 --network elastic --name dwg -d dwgtextract
+	
+to get result:
+	curl -X POST "http://localhost:4100/process" \
+    		 -F "file=@../Samples/1.dwg"
+
+
+
+to build again:
+	dotnet build -c Release
+	copy Extractor/bin/Release/net6.0 to Docker folder
+	cd Docker
+	docker build -t dwgtextract . 
+
+
+for non docker version :
+	./DwgTextract Samples/2.dwg Extractor/Resources/encode_list.csv Extractor/Resources/Fonts

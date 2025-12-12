@@ -1,0 +1,51 @@
+services:
+  es01:
+    container_name: es01
+    image: es:hunspell
+    hostname: es01  
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms4g -Xmx24g
+      - xpack.security.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - /mnt/nvme1/Elastic:/usr/share/elasticsearch/data
+    networks:
+      - elastic   
+#    restart: on-failure  
+  dwg:
+    image: dwgtextract
+    container_name: dwg
+    ports:
+      - "4100:4100"
+    networks:
+      - elastic
+    restart: unless-stopped
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    ports:
+      - "3001:8080"
+    volumes:
+      - open-webui:/app/backend/data
+    environment:
+      OPENAI_API_BASE_URL: "http://192.168.1.50:11434/v1"
+    restart: always
+    networks:
+      - elastic
+
+
+volumes:
+  open-webui:
+
+
+
+
+
+networks:
+  elastic:
+    driver: bridge
+    external: true  

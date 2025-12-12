@@ -1,0 +1,9 @@
+FROM docker.elastic.co/elasticsearch/elasticsearch:9.2.2 
+USER root
+USER 1000
+RUN mkdir -p /usr/share/elasticsearch/config/hunspell/en_US
+COPY NASA.json /usr/share/elasticsearch/config
+COPY en_US.aff /usr/share/elasticsearch/config/hunspell/en_US
+COPY en_US.dic /usr/share/elasticsearch/config/hunspell/en_US
+COPY wn_s.pl /usr/share/elasticsearch/config
+

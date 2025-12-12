@@ -1,0 +1,14 @@
+The ollama is running as a service
+
+run elastic docker " docker compose   -f elasticOnly.yml up  -d" on Compose folder
+
+run OpenWebUi as a docker. see the command in the LLM/OpenWebUi folder it will serve in http://192.168.1.50:3001
+
+run DwgTextract as docker, see how to run and query a file in DwgTextract/commands
+
+run Open Rag ui as set of dockers. see the command in LLM/rag-web-ui it will serve in http://192.168.1.50:80
+
+
+
+
+Sample files exists in //home/barako/Tails/Samples/try1   or //home/barako/Tails/Samples/PHD_litreture
