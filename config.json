@@ -30,6 +30,7 @@
     },
     "semantic_model": {
         "model_name": "C:\\Users\\barako\\.cache\\huggingface\\hub\\models--sentence-transformers--all-MiniLM-L6-v2\\snapshots\\c9745ed1d9f207416be6d2e6f8de32d1f16199bf",
+        "net_model_name": "all-MiniLM-L6-v2",
         "content_embedding_field": "content_embedding",
         "filename_embedding_field": "filename_embedding",
         "content_field": "content",
@@ -37,15 +38,15 @@
         "use_semantic_search": true
     },
     "docker_env":{
-        "STACK_VERSION": "9.2.0",
+        "STACK_VERSION": "9.2.2",
         "LICENSE": "trial",
         "ES_PORT": "9200",
-        "CLUSTER_NAME": "es",
+        "CLUSTER_NAME": "es01",
         "MEM_LIMIT": "4294967296",
         "FS_JAVA_OPTS": "-DLOG_LEVEL=debug -DDOC_LEVEL=debug",
-        "FSCRAWLER_VERSION": "2.10-SNAPSHOT",
+        "FSCRAWLER_VERSION": "latest",
         "FSCRAWLER_PORT": "8080",
-        "FSCRAWLER_CONFIG": "..\\fsjobs",
-        "ES_PATH": "..\\es_data"
+        "FSCRAWLER_CONFIG": ".\\fsjobs",
+        "ES_PATH": "\\mnt\\nvme1\\Elastic"
     }
 }

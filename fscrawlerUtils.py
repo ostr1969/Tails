@@ -7,7 +7,7 @@ if script_dir not in sys.path:
 from __init__ import CONFIG, EsClient,wait_for_es,is_es_alive,win2linux_path,index_exists,linux2win_path
 from elasticsearch.exceptions import NotFoundError
 import shutil,subprocess
-from subprocess import Popen, PIPE, CREATE_NEW_CONSOLE
+from subprocess import Popen, PIPE
 import yaml
 import regex as re
 from index_llm import Update_all_semantics
@@ -46,11 +46,11 @@ def run_fs_docker_job(name: str,target_dir: str):
     subprocess.run(["docker", "rm", "-f", "fs"], stdout=PIPE, stderr=PIPE)
     return subprocess.run(["docker", "run",  "--name", "fs", 
                 "--env", f"FS_JAVA_OPTS={FS_JAVA_OPTS}", 
-                "-v", f"{DOCS_FOLDER}:{win2linux_path(DOCS_FOLDER)}:ro", 
+                "-v", f"{DOCS_FOLDER}:{DOCS_FOLDER}:ro", 
                 "-v", f"{FSCRAWLER_CONFIG}:/root/.fscrawler",
                 "-p", f"{FSCRAWLER_PORT}:8080", 
                 "--rm",
-                "--network", "tails_net", 
+                "--network", "elastic", 
                 f"dadoonet/fscrawler:{FSCRAWLER_VERSION}", 
                 name, "--restart","--silent", "--loop", "1"])
 class FscrawlerError (Exception):
@@ -135,7 +135,7 @@ def run_job(name: str,model, target_dir: str):
         print(f"FS Crawler job {name} finished in {fs_time:.1f} seconds.")
         add_index_meta(name,fs_time,0,0)
         start_time=time.time()
-        #Update_all_dwgs_dwgs(EsClient, name)
+        Update_all_dwgs_dwgs(EsClient, name)
         dwg_time= time.time()-start_time
         add_index_meta(name, fs_time, dwg_time, 0)
         start_time=time.time()
@@ -181,7 +181,7 @@ def jobs_status():
     jobs = []
     # {"name": "job1", "directory": "C:", "indexed_files": 30000, "status": "running"}
     for name in get_all_jobs():
-        job_docs_folder=linux2win_path(get_job_setting(name, "fs.url"))
+        job_docs_folder=get_job_setting(name, "fs.url")
         if not index_exists(EsClient, name):#found folder but no index
             status = "missing"
             job = {"name": name, "indexed_files": 0, "directory": job_docs_folder,

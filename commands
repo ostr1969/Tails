@@ -1,0 +1,1 @@
+docker run --env "FS_JAVE_OPS=-DLOG_LEVEL=debug -DDOC_LEVEL=debug" -v /home/barako/Tails/Samples/try1:/home/barako/Tails/Samples/try1 -v /home/barako/Tails/fsjobs:/root/.fscrawler -p 8080:8080 --rm --network elastic dadoonet/fscrawler:latest try1 --restart --silent --loop 1

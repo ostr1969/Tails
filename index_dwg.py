@@ -1,5 +1,7 @@
 # script to go over Elastic index and Index all DWG files using command line
 import os,sys
+
+import requests
 script_dir = os.path.dirname(os.path.abspath(__file__))
 if script_dir not in sys.path:
     sys.path.insert(0, script_dir)  # insert at front to prioritize
@@ -30,20 +32,21 @@ def get_dwgs(es_client, index_name):
 
 
 def index_dwg(path: str):
-    """Index a single DWG file using .NET exe"""
-    config = CONFIG["dwg_indexer"]
-    # Ensure the path is correct and you have execution permissions
-    exe_path = config["path"]
-    if not os.access(exe_path, os.X_OK):
-        raise PermissionError(f"Cannot execute: {exe_path}. Check file permissions.")
-    process = subprocess.run([exe_path, path, config["fonts_csv"], config["fonts_dir"]], capture_output=True, text=True)
-    output = process.stdout.strip()
-    try:
-        result = json.loads(output)
-    except json.JSONDecodeError:
-        result = {"error": "Failed to parse output", "raw": output}
-    return result
+    """Index a single DWG file using DwgExtract docker api"""
+    url = "http://localhost:4100/process"
+    with open(path, "rb") as f:
+        response = requests.post(url, files={"file": f})
 
+    response.raise_for_status()
+
+    data = response.json()          # the API’s JSON
+    stdout_text = data["stdout"]    # this is a long text
+    stdout_json = json.loads(stdout_text)  # parse it as JSON
+
+    return stdout_json
+
+
+  
 def update_dwg(es_client, file_id: str, index_name: str, content: dict):
     """Update a DWG (with file id) with content dictionary"""
     update_body = {
@@ -54,6 +57,7 @@ def update_dwg(es_client, file_id: str, index_name: str, content: dict):
     }
     print(f"updating {index_name}/{file_id} with {len(str(content))} content characters")
     es_client.update(index=index_name, id=file_id, body=update_body)
+    
 def Update_all_dwgs_dwgs(es_client, index_name):
     dwgs = list(get_dwgs(es_client, index_name))
     ndwgs = len(dwgs)
@@ -69,5 +73,5 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Index DWG files from Elastic index.")
     parser.add_argument("index_name", help="Name of the Elastic index to search for DWG files")
     args = parser.parse_args()
-    Update_all_dwgs(EsClient, args.index_name)
+    Update_all_dwgs_dwgs(EsClient, args.index_name)
     

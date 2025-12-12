@@ -316,9 +316,9 @@ def background_task():
 def load_model():
     global model
     print("Loading model...")
-    model = SentenceTransformer(CONFIG["semantic_model"]["model_name"])
+    model = SentenceTransformer(CONFIG["semantic_model"]["net_model_name"])
     #time.sleep(10)
-    print("Model loaded.")
+    print("* Model loaded!")
 def load_elasticsearch():
     if not is_es_alive(EsClient):
         print("Elasticsearch is not reachable. Starting by docker compose...") 
@@ -331,4 +331,4 @@ if __name__ == '__main__':
     #load_model()                # runs once
         Thread(target=load_model, daemon=True).start()  # runs once
         Thread(target=load_elasticsearch, daemon=True).start()  # runs once
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000,debug=True)

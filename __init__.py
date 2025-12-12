@@ -23,12 +23,13 @@ drive, path = os.path.splitdrive(curdir)
 # Connect to your Elasticsearch cluster
 EsClient = Elasticsearch(CONFIG["elasticsearch_url"])
 # load some dynamic defaults on the CONFIG
-PROJECT_PARENT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJECT_PATH = os.path.dirname(os.path.abspath(__file__))
+PROJECT_PARENT = os.path.dirname(PROJECT_PATH)
 #print("PROJECT_PARENT:", PROJECT_PARENT)
 if CONFIG["fscrawler"]["exe"] == "None":
     CONFIG["fscrawler"]["exe"] = os.path.join(PROJECT_PARENT, "fscrawler", "bin", "fscrawler.bat")
 if CONFIG["fscrawler"]["config_dir"] == "None":
-    CONFIG["fscrawler"]["config_dir"] = os.path.join(PROJECT_PARENT, "fsjobs")
+    CONFIG["fscrawler"]["config_dir"] = os.path.join(PROJECT_PATH, "fsjobs")
 if CONFIG["fscrawler"]["defaults"] == "None":
     CONFIG["fscrawler"]["defaults"] = os.path.join(CONFIG["fscrawler"]["config_dir"], "_defaults.yaml")
 def wait_for_es(es: Elasticsearch, timeout=60):
@@ -36,7 +37,7 @@ def wait_for_es(es: Elasticsearch, timeout=60):
     while True:
         try:
             if es.ping():
-                print("Elasticsearch is ready!")
+                print("* Elasticsearch is ready!")
                 return True
         except Exception:
             pass
